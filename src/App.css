@@ -17,6 +17,7 @@
   flex-direction: column;
   height: 100%;
   flex: 1;
+  padding-left: 10px;
 }
 
 .settings {
@@ -174,3 +175,4 @@
   cursor: pointer;
   outline: none;
 }
+

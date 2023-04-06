@@ -6,13 +6,14 @@ Simple GUI to interact with various ChatGPT models via API.
 
 - Install dependencies: `pnpm install`
 - Start the server: `pnpm run server`
-- Start the frontend: `pnpm start`
+- Start the frontend: `pnpm run start`
 
 ## Features
 
 - Model selection
-- Light/dark mode toggle [TBD]
+- Multiple chat sessions
 - History [TBD]
+- Light/dark mode toggle [TBD]
 
 ## License
 
