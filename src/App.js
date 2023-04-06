@@ -8,7 +8,6 @@ import Sidebar from "./components/Sidebar";
 import axios from 'axios';
 import { v4 as uuidv4 } from 'uuid';
 
-
 const App = () => {
   const [chats, setChats] = useState(
       JSON.parse(localStorage.getItem('chats')) || [
@@ -20,6 +19,9 @@ const App = () => {
   const [model, setModel] = useState(localStorage.getItem('model') || 'gpt-3.5-turbo');
   const [apiKey, setApiKey] = useState(localStorage.getItem('apiKey') || '');
   const [showSettings, setShowSettings] = useState(false);
+  const activeChat = chats.find((chat) => chat.id === activeChatId);
+  const [chatCounter, setChatCounter] = useState(parseInt(localStorage.getItem('chatCounter')) || 1);
+
 
   useEffect(() => {
     localStorage.setItem('chats', JSON.stringify(chats));
@@ -34,9 +36,14 @@ const App = () => {
   }, [apiKey]);
 
   useEffect(() => {
+    localStorage.setItem('chatCounter', chatCounter);
+  }, [chatCounter]);
+
+
+  useEffect(() => {
     const currentActiveChat = chats.find((chat) => chat.id === activeChatId);
     if (!currentActiveChat) {
-      setActiveChatId(chats[0].id);
+      setActiveChatId(chats[0]?.id || '');
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [chats]);
@@ -95,7 +102,6 @@ const App = () => {
     }
   };
 
-
   const toggleSettingsModal = () => {
     setShowSettings(!showSettings);
   };
@@ -104,16 +110,17 @@ const App = () => {
     setActiveChatId(chatId);
   };
 
-
   const createChat = () => {
     const newChat = {
       id: uuidv4(),
-      title: `Chat ${chats.length + 1}`,
+      title: `Chat ${chatCounter}`,
       messages: [],
     };
     setChats([...chats, newChat]);
     setActiveChatId(newChat.id);
+    setChatCounter(chatCounter + 1);
   };
+
 
   const deleteChat = (chatId) => {
     if (chats.length === 1) {
@@ -124,7 +131,18 @@ const App = () => {
     setActiveChatId(remainingChats[0].id);
   };
 
-  const activeChat = chats.find((chat) => chat.id === activeChatId);
+  const renameChat = (chatId, newTitle) => {
+    setChats((prevChats) => {
+      const updatedChats = prevChats.map((chat) => {
+        if (chat.id === chatId) {
+          return { ...chat, title: newTitle };
+        }
+        return chat;
+      });
+      return updatedChats;
+    });
+  };
+
 
   return (
       <div className="App">
@@ -134,14 +152,22 @@ const App = () => {
             onChatSelect={onChatSelect}
             onCreateChat={createChat}
             onDeleteChat={deleteChat}
+            onRenameChat={renameChat}
+            toggleSettingsModal={toggleSettingsModal}
         />
         <div className="chatbox">
-          <MessageList messages={activeChat.messages} />
-          <ChatInput onSendMessage={onSendMessage} toggleSettingsModal={toggleSettingsModal} />
-          {showSettings && (
-              <Modal isOpen={showSettings} onClose={toggleSettingsModal}>
-                <Settings apiKey={apiKey} model={model} onApiKeyChange={setApiKey} onModelChange={setModel} />
-              </Modal>
+          {activeChat ? (
+              <>
+                <MessageList messages={activeChat.messages} />
+                <ChatInput onSendMessage={onSendMessage} toggleSettingsModal={toggleSettingsModal} />
+                {showSettings && (
+                    <Modal isOpen={showSettings} onClose={toggleSettingsModal}>
+                      <Settings apiKey={apiKey} model={model} onApiKeyChange={setApiKey} onModelChange={setModel} />
+                    </Modal>
+                )}
+              </>
+          ) : (
+              <div>Loading...</div>
           )}
         </div>
       </div>

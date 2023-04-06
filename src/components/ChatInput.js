@@ -1,4 +1,6 @@
 import React, { useState } from 'react';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { faPaperPlane } from '@fortawesome/free-solid-svg-icons';
 
 const ChatInput = ({ onSendMessage, toggleSettingsModal }) => {
     const [message, setMessage] = useState('');
@@ -21,10 +23,7 @@ const ChatInput = ({ onSendMessage, toggleSettingsModal }) => {
                     style={{ width: '100%' }}
                 />
                 <div>
-                    <button type="submit">Send</button>
-                    <button className="settings-button" onClick={toggleSettingsModal}>
-                        Config
-                    </button>
+                    <button className="send-button" type="submit"><FontAwesomeIcon icon={faPaperPlane} /></button>
                 </div>
             </form>
         </div>
