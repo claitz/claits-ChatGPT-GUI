@@ -11,7 +11,7 @@ const PORT = process.env.PORT || 3001;
 
 app.post('/api/chat', async (req, res) => {
     try {
-
+        console.log(req.body);
 
         const { message } = req.body;
 

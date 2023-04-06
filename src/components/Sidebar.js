@@ -1,17 +1,29 @@
+import React from 'react';
+
 const Sidebar = ({ chats, activeChat, onChatSelect, onCreateChat, onDeleteChat }) => {
     return (
         <div className="sidebar">
-            <h2>Chats</h2>
-            <ul>
+            <div className="sidebar-header">
+                <h2>Chats</h2>
+                <button className="new-chat-button" onClick={onCreateChat}>
+                    New Chat
+                </button>
+            </div>
+            <ul className="sidebar-chat-list">
                 {chats.map((chat) => (
-                    <li key={chat.title} className={activeChat === chat ? 'active' : ''}>
-                        <button onClick={() => onChatSelect(chat)}>{chat.title}</button>
-                        <button className="close" onClick={() => onDeleteChat(chat)}>X</button>
+                    <li
+                        key={chat.title}
+                        className={activeChat === chat ? 'selected' : ''}
+                        onClick={() => onChatSelect(chat)}
+                    >
+                        <div className="chat-title">
+                            {chat.title}
+                            <button className="delete-chat-button" onClick={() => onDeleteChat(chat)}>
+                                X
+                            </button>
+                        </div>
                     </li>
                 ))}
-                <li>
-                    <button onClick={onCreateChat}>New Chat</button>
-                </li>
             </ul>
         </div>
     );
