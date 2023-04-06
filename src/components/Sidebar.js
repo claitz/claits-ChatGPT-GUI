@@ -12,13 +12,13 @@ const Sidebar = ({ chats, activeChat, onChatSelect, onCreateChat, onDeleteChat }
             <ul className="sidebar-chat-list">
                 {chats.map((chat) => (
                     <li
-                        key={chat.title}
+                        key={chat.id}
                         className={activeChat === chat ? 'selected' : ''}
-                        onClick={() => onChatSelect(chat)}
+                        onClick={() => onChatSelect(chat.id)}
                     >
                         <div className="chat-title">
                             {chat.title}
-                            <button className="delete-chat-button" onClick={() => onDeleteChat(chat)}>
+                            <button className="delete-chat-button" onClick={() => onDeleteChat(chat.id)}>
                                 X
                             </button>
                         </div>

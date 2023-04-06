@@ -6,12 +6,17 @@ import Modal from './components/Modal';
 import Settings from "./components/Settings";
 import Sidebar from "./components/Sidebar";
 import axios from 'axios';
+import { v4 as uuidv4 } from 'uuid';
+
 
 const App = () => {
   const [chats, setChats] = useState(
-      JSON.parse(localStorage.getItem('chats')) || [{ title: 'New Chat', messages: [] }]
+      JSON.parse(localStorage.getItem('chats')) || [
+        { id: uuidv4(), title: 'New Chat', messages: [] },
+      ]
   );
-  const [activeChat, setActiveChat] = useState(chats[0]);
+
+  const [activeChatId, setActiveChatId] = useState(chats[0].id);
   const [model, setModel] = useState(localStorage.getItem('model') || 'gpt-3.5-turbo');
   const [apiKey, setApiKey] = useState(localStorage.getItem('apiKey') || '');
   const [showSettings, setShowSettings] = useState(false);
@@ -28,10 +33,25 @@ const App = () => {
     localStorage.setItem('apiKey', apiKey);
   }, [apiKey]);
 
+  useEffect(() => {
+    const currentActiveChat = chats.find((chat) => chat.id === activeChatId);
+    if (!currentActiveChat) {
+      setActiveChatId(chats[0].id);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [chats]);
+
   const onSendMessage = async (message) => {
-    setActiveChat((prevChat) => {
-      const newMessages = [...prevChat.messages, { role: 'user', content: message }];
-      return { ...prevChat, messages: newMessages };
+    const activeChatIndex = chats.findIndex((chat) => chat.id === activeChatId);
+    const userMessage = { role: 'user', content: message };
+
+    setChats((prevChats) => {
+      const updatedChats = [...prevChats];
+      updatedChats[activeChatIndex].messages = [
+        ...updatedChats[activeChatIndex].messages,
+        userMessage,
+      ];
+      return updatedChats;
     });
 
     try {
@@ -41,50 +61,80 @@ const App = () => {
         apiKey,
       });
 
-      setActiveChat((prevChat) => {
-        const newMessages = [
-          ...prevChat.messages,
-          { role: 'bot', content: response.data.reply },
-        ];
-        return { ...prevChat, messages: newMessages };
+      const botMessage = { role: 'bot', content: response.data.reply };
+
+      setChats((prevChats) => {
+        const updatedChats = [...prevChats];
+        const existingBotMessageIndex = updatedChats[activeChatIndex].messages.findIndex(
+            (msg) => msg.role === 'bot' && msg.content === botMessage.content
+        );
+
+        if (existingBotMessageIndex === -1) {
+          updatedChats[activeChatIndex].messages = [
+            ...updatedChats[activeChatIndex].messages,
+            botMessage,
+          ];
+        }
+
+        return updatedChats;
       });
     } catch (error) {
       console.error('Error sending message:', error);
       const serverErrorMessage =
           error.response?.data?.error?.message || 'An unexpected error occurred.';
-      setActiveChat((prevChat) => {
-        const newMessages = [
-          ...prevChat.messages,
-          { role: 'bot', content: serverErrorMessage },
+      const errorMessage = { role: 'bot', content: serverErrorMessage };
+
+      setChats((prevChats) => {
+        const updatedChats = [...prevChats];
+        updatedChats[activeChatIndex].messages = [
+          ...updatedChats[activeChatIndex].messages,
+          errorMessage,
         ];
-        return { ...prevChat, messages: newMessages };
+        return updatedChats;
       });
     }
   };
+
 
   const toggleSettingsModal = () => {
     setShowSettings(!showSettings);
   };
 
-  const onChatSelect = (chat) => {
-    setActiveChat(chat);
+  const onChatSelect = (chatId) => {
+    setActiveChatId(chatId);
   };
 
+
   const createChat = () => {
-    const newChat = { title: `Chat ${chats.length + 1}`, messages: [] };
+    const newChat = {
+      id: uuidv4(),
+      title: `Chat ${chats.length + 1}`,
+      messages: [],
+    };
     setChats([...chats, newChat]);
-    setActiveChat(newChat);
+    setActiveChatId(newChat.id);
   };
 
   const deleteChat = (chatId) => {
-    const remainingChats = chats.filter((chat) => chat !== chatId);
+    if (chats.length === 1) {
+      createChat();
+    }
+    const remainingChats = chats.filter((chat) => chat.id !== chatId);
     setChats(remainingChats);
-    setActiveChat(remainingChats[0]);
+    setActiveChatId(remainingChats[0].id);
   };
+
+  const activeChat = chats.find((chat) => chat.id === activeChatId);
 
   return (
       <div className="App">
-        <Sidebar chats={chats} activeChat={activeChat} onChatSelect={onChatSelect} onCreateChat={createChat} onDeleteChat={deleteChat} />
+        <Sidebar
+            chats={chats}
+            activeChat={activeChat}
+            onChatSelect={onChatSelect}
+            onCreateChat={createChat}
+            onDeleteChat={deleteChat}
+        />
         <div className="chatbox">
           <MessageList messages={activeChat.messages} />
           <ChatInput onSendMessage={onSendMessage} toggleSettingsModal={toggleSettingsModal} />
