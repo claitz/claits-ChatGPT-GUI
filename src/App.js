@@ -21,6 +21,8 @@ const App = () => {
   const [showSettings, setShowSettings] = useState(false);
   const activeChat = chats.find((chat) => chat.id === activeChatId);
   const [chatCounter, setChatCounter] = useState(parseInt(localStorage.getItem('chatCounter')) || 1);
+  const [isLoading, setIsLoading] = useState(false);
+
 
 
   useEffect(() => {
@@ -61,6 +63,8 @@ const App = () => {
       return updatedChats;
     });
 
+    setIsLoading(true); // Set loading state to true
+
     try {
       const response = await axios.post('http://localhost:3001/api/chat', {
         message,
@@ -85,11 +89,11 @@ const App = () => {
 
         return updatedChats;
       });
+      setIsLoading(false); // Set loading state to false after receiving response
     } catch (error) {
       console.error('Error sending message:', error);
-      const serverErrorMessage =
-          error.response?.data?.error?.message || 'An unexpected error occurred.';
-      const errorMessage = { role: 'bot', content: serverErrorMessage, timestamp: Date.now() };
+
+      const errorMessage = { role: 'bot', content: 'An unexpected error occurred.', timestamp: Date.now() };
 
       setChats((prevChats) => {
         const updatedChats = [...prevChats];
@@ -99,6 +103,7 @@ const App = () => {
         ];
         return updatedChats;
       });
+      setIsLoading(false); // Set loading state to false after receiving error
     }
   };
 
@@ -121,15 +126,15 @@ const App = () => {
     setChatCounter(chatCounter + 1);
   };
 
-
   const deleteChat = (chatId) => {
-    if (chats.length === 1) {
-      createChat();
+    if (chats.length <= 1) {
+      return;
     }
     const remainingChats = chats.filter((chat) => chat.id !== chatId);
     setChats(remainingChats);
     setActiveChatId(remainingChats[0].id);
   };
+
 
   const renameChat = (chatId, newTitle) => {
     setChats((prevChats) => {
@@ -159,7 +164,7 @@ const App = () => {
           {activeChat ? (
               <>
                 <MessageList messages={activeChat.messages} />
-                <ChatInput onSendMessage={onSendMessage} toggleSettingsModal={toggleSettingsModal} />
+                <ChatInput onSendMessage={onSendMessage} isLoading={isLoading} toggleSettingsModal={toggleSettingsModal} />
                 {showSettings && (
                     <Modal isOpen={showSettings} onClose={toggleSettingsModal}>
                       <Settings apiKey={apiKey} model={model} onApiKeyChange={setApiKey} onModelChange={setModel} />
