@@ -12,7 +12,7 @@ import { v4 as uuidv4 } from 'uuid';
 const App = () => {
   const [chats, setChats] = useState(
       JSON.parse(localStorage.getItem('chats')) || [
-        { id: uuidv4(), title: 'New Chat', messages: [] },
+        { id: uuidv4(), title: 'Chat 1', messages: [] },
       ]
   );
 
@@ -43,7 +43,7 @@ const App = () => {
 
   const onSendMessage = async (message) => {
     const activeChatIndex = chats.findIndex((chat) => chat.id === activeChatId);
-    const userMessage = { role: 'user', content: message };
+    const userMessage = { role: 'user', content: message, timestamp: Date.now() };
 
     setChats((prevChats) => {
       const updatedChats = [...prevChats];
@@ -61,7 +61,7 @@ const App = () => {
         apiKey,
       });
 
-      const botMessage = { role: 'bot', content: response.data.reply };
+      const botMessage = { role: 'bot', content: response.data.reply, timestamp: Date.now() };
 
       setChats((prevChats) => {
         const updatedChats = [...prevChats];
@@ -82,7 +82,7 @@ const App = () => {
       console.error('Error sending message:', error);
       const serverErrorMessage =
           error.response?.data?.error?.message || 'An unexpected error occurred.';
-      const errorMessage = { role: 'bot', content: serverErrorMessage };
+      const errorMessage = { role: 'bot', content: serverErrorMessage, timestamp: Date.now() };
 
       setChats((prevChats) => {
         const updatedChats = [...prevChats];

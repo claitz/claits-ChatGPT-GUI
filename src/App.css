@@ -116,6 +116,12 @@
   text-align: right;
 }
 
+.message-timestamp {
+  font-size: 0.8rem;
+  color: #999;
+  text-align: right;
+}
+
 
 .chat-input {
   display: flex;
