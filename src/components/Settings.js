@@ -5,6 +5,7 @@ const Settings = ({ model, apiKey, onModelChange, onApiKeyChange }) => {
 
             <h4>Model:</h4>
             <select value={model} onChange={(e) => onModelChange(e.target.value)}>
+                <option value="gpt-3.5-turbo-0301">gpt-3.5-turbo-0301</option>
                 <option value="gpt-3.5-turbo">gpt-3.5-turbo</option>
                 <option value="gpt-4">gpt-4-8k</option>
                 <option value="gpt-4-32k">gpt-4-32k</option>
