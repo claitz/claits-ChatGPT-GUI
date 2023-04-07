@@ -1,47 +1,59 @@
-import React, {useEffect, useState} from 'react';
+import React, { useEffect, useState, useCallback, useMemo } from 'react';
 import './App.css';
 import ChatInput from './components/ChatInput';
 import MessageList from './components/MessageList';
 import Modal from './components/Modal';
 import Settings from "./components/Settings";
 import Sidebar from "./components/Sidebar";
-import axios from 'axios';
 import {v4 as uuidv4} from 'uuid';
+import io from 'socket.io-client';
+
+const SOCKET_SERVER_ADDRESS = process.env.REACT_APP_SOCKET_SERVER_ADDRESS || 'http://localhost:3001';
+
+const STORAGE_KEYS = {
+  chats: 'chats',
+  model: 'model',
+  apiKey: 'apiKey',
+  chatCounter: 'chatCounter',
+};
 
 const App = () => {
+
   const [chats, setChats] = useState(
-      JSON.parse(localStorage.getItem('chats')) || [
+      JSON.parse(localStorage.getItem(STORAGE_KEYS.chats)) || [
         { id: uuidv4(), title: 'Chat 1', messages: [] },
-      ]
+      ],
   );
 
+  const [chatCounter, setChatCounter] = useState(
+      parseInt(localStorage.getItem(STORAGE_KEYS.chatCounter)) || 1,
+  );
+
+  const [socket, setSocket] = useState(null);
   const [activeChatId, setActiveChatId] = useState(chats[0].id);
   const [model, setModel] = useState(localStorage.getItem('model') || 'gpt-3.5-turbo');
   const [apiKey, setApiKey] = useState(localStorage.getItem('apiKey') || '');
   const [showSettings, setShowSettings] = useState(false);
-  const activeChat = chats.find((chat) => chat.id === activeChatId);
-  const [chatCounter, setChatCounter] = useState(parseInt(localStorage.getItem('chatCounter')) || 1);
+  const activeChat = useMemo(() => chats.find((chat) => chat.id === activeChatId), [chats, activeChatId]);
   const [isLoading, setIsLoading] = useState(false);
 
-
-
   useEffect(() => {
-    localStorage.setItem('chats', JSON.stringify(chats));
+    localStorage.setItem(STORAGE_KEYS.chats, JSON.stringify(chats));
   }, [chats]);
 
   useEffect(() => {
-    localStorage.setItem('model', model);
+    localStorage.setItem(STORAGE_KEYS.model, model);
   }, [model]);
 
   useEffect(() => {
-    localStorage.setItem('apiKey', apiKey);
+    localStorage.setItem(STORAGE_KEYS.apiKey, apiKey);
   }, [apiKey]);
 
   useEffect(() => {
-    localStorage.setItem('chatCounter', chatCounter);
+    localStorage.setItem(STORAGE_KEYS.chatCounter, chatCounter);
   }, [chatCounter]);
 
-
+  // Set the active chat to the first chat if the active chat is deleted
   useEffect(() => {
     const currentActiveChat = chats.find((chat) => chat.id === activeChatId);
     if (!currentActiveChat) {
@@ -50,7 +62,18 @@ const App = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [chats]);
 
-  const addMessageToChat = (message) => {
+  // Set up the socket connection
+  useEffect(() => {
+    const newSocket = io(SOCKET_SERVER_ADDRESS);
+    setSocket(newSocket);
+
+    return () => {
+      newSocket.close();
+    };
+  }, []);
+
+  // Add a new message to the active chat
+  const addMessageToChat = useCallback((message) => {
     setChats((prevChats) => {
       const activeChatIndex = prevChats.findIndex((chat) => chat.id === activeChatId);
       const updatedChats = [...prevChats];
@@ -60,42 +83,56 @@ const App = () => {
       };
       return updatedChats;
     });
-  };
+  }, [activeChatId]);
 
 
-  const onSendMessage = async (message) => {
+  // Set up event listeners for the bot message and error events
+  useEffect(() => {
+    if (socket) {
+      socket.on('bot message', (data) => {
+        const botMessage = { id: uuidv4(), role: 'bot', content: data.reply, timestamp: Date.now() };
+        addMessageToChat(botMessage);
+        setIsLoading(false);
+      });
+
+      socket.on('error', (data) => {
+        const errorMessage = { id: uuidv4(), role: 'bot', content: data.error, timestamp: Date.now() };
+        addMessageToChat(errorMessage);
+        setIsLoading(false);
+      });
+    }
+
+    return () => {
+      if (socket) {
+        socket.off('bot message');
+        socket.off('error');
+      }
+    };
+  }, [socket, addMessageToChat]);
+
+  // Send a message to the bot
+  const onSendMessage = (message) => {
     const userMessage = { id: uuidv4(), role: 'user', content: message, timestamp: Date.now() };
     addMessageToChat(userMessage);
 
     setIsLoading(true); // Set loading state to true
 
-    try {
-      const response = await axios.post('http://localhost:3001/api/chat', {
-        message,
-        model,
-        apiKey,
-      });
-
-      const botMessage = {id: uuidv4(), role: 'bot', content: response.data.reply, timestamp: Date.now()};
-      addMessageToChat(botMessage);
-      setIsLoading(false); // Set loading state to false after receiving response
-    } catch (error) {
-      console.error('Error sending message:', error.response?.data?.error || error);
-      const errorMessage = { id: uuidv4(), role: 'bot', content: error.response?.data?.error || 'An unexpected error occurred.', timestamp: Date.now() };
-      addMessageToChat(errorMessage);
-      setIsLoading(false); // Set loading state to false after receiving error
+    if (socket) {
+      socket.emit('chat message', { message, model, apiKey });
     }
   };
 
-
+  // Toggle the settings modal
   const toggleSettingsModal = () => {
     setShowSettings(!showSettings);
   };
 
+  // Set the active chat
   const onChatSelect = (chatId) => {
     setActiveChatId(chatId);
   };
 
+  // Create a new chat
   const createChat = () => {
     const newChat = {
       id: uuidv4(),
@@ -107,6 +144,7 @@ const App = () => {
     setChatCounter(chatCounter + 1);
   };
 
+  // Delete a chat
   const deleteChat = (chatId) => {
     if (chats.length <= 1) {
       return;
@@ -116,7 +154,7 @@ const App = () => {
     setActiveChatId(remainingChats[0].id);
   };
 
-
+  // Rename a chat
   const renameChat = (chatId, newTitle) => {
     setChats((prevChats) => {
       return prevChats.map((chat) => {
@@ -127,7 +165,6 @@ const App = () => {
       });
     });
   };
-
 
   return (
       <div className="App">

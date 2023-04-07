@@ -1,6 +1,6 @@
 import React from 'react';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faTrash, faSquarePlus, faGear } from '@fortawesome/free-solid-svg-icons';
+import { faTrash, faSquarePlus, faGear, faPenToSquare } from '@fortawesome/free-solid-svg-icons';
 
 
 const Sidebar = ({ chats, activeChat, onChatSelect, onCreateChat, onDeleteChat, onRenameChat, toggleSettingsModal}) => {
@@ -41,11 +41,28 @@ const Sidebar = ({ chats, activeChat, onChatSelect, onCreateChat, onDeleteChat, 
                                     className="edit-chat-title"
                                 />
                             ) : (
-                                <div className="chat-title" onDoubleClick={() => setEditingChatId(chat.id)}>
+                                <div className="chat-title">
                                     {chat.title}
-                                    <button className="delete-chat-button" onClick={() => onDeleteChat(chat.id)}>
-                                        <FontAwesomeIcon icon={faTrash} />
-                                    </button>
+                                    <div className="sidebar-button-container">
+                                        <button
+                                            className="delete-chat-button"
+                                            onClick={(event) => {
+                                                event.stopPropagation();
+                                                setEditingChatId(chat.id);
+                                            }}
+                                        >
+                                            <FontAwesomeIcon icon={faPenToSquare} />
+                                        </button>
+                                        <button
+                                            className="rename-chat-button"
+                                            onClick={(event) => {
+                                                event.stopPropagation();
+                                                onDeleteChat(chat.id);
+                                            }}
+                                        >
+                                            <FontAwesomeIcon icon={faTrash} />
+                                        </button>
+                                    </div>
                                 </div>
                             )}
                         </li>
