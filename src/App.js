@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, {useEffect, useState} from 'react';
 import './App.css';
 import ChatInput from './components/ChatInput';
 import MessageList from './components/MessageList';
@@ -6,7 +6,7 @@ import Modal from './components/Modal';
 import Settings from "./components/Settings";
 import Sidebar from "./components/Sidebar";
 import axios from 'axios';
-import { v4 as uuidv4 } from 'uuid';
+import {v4 as uuidv4} from 'uuid';
 
 const App = () => {
   const [chats, setChats] = useState(
@@ -50,18 +50,22 @@ const App = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [chats]);
 
-  const onSendMessage = async (message) => {
-    const activeChatIndex = chats.findIndex((chat) => chat.id === activeChatId);
-    const userMessage = { role: 'user', content: message, timestamp: Date.now() };
-
+  const addMessageToChat = (message) => {
     setChats((prevChats) => {
+      const activeChatIndex = prevChats.findIndex((chat) => chat.id === activeChatId);
       const updatedChats = [...prevChats];
-      updatedChats[activeChatIndex].messages = [
-        ...updatedChats[activeChatIndex].messages,
-        userMessage,
-      ];
+      updatedChats[activeChatIndex] = {
+        ...updatedChats[activeChatIndex],
+        messages: [...updatedChats[activeChatIndex].messages, message],
+      };
       return updatedChats;
     });
+  };
+
+
+  const onSendMessage = async (message) => {
+    const userMessage = { id: uuidv4(), role: 'user', content: message, timestamp: Date.now() };
+    addMessageToChat(userMessage);
 
     setIsLoading(true); // Set loading state to true
 
@@ -72,40 +76,18 @@ const App = () => {
         apiKey,
       });
 
-      const botMessage = { role: 'bot', content: response.data.reply, timestamp: Date.now() };
-
-      setChats((prevChats) => {
-        const updatedChats = [...prevChats];
-        const existingBotMessageIndex = updatedChats[activeChatIndex].messages.findIndex(
-            (msg) => msg.role === 'bot' && msg.content === botMessage.content
-        );
-
-        if (existingBotMessageIndex === -1) {
-          updatedChats[activeChatIndex].messages = [
-            ...updatedChats[activeChatIndex].messages,
-            botMessage,
-          ];
-        }
-
-        return updatedChats;
-      });
+      const botMessage = {id: uuidv4(), role: 'bot', content: response.data.reply, timestamp: Date.now()};
+      addMessageToChat(botMessage);
       setIsLoading(false); // Set loading state to false after receiving response
     } catch (error) {
       console.error('Error sending message:', error);
 
-      const errorMessage = { role: 'bot', content: 'An unexpected error occurred.', timestamp: Date.now() };
-
-      setChats((prevChats) => {
-        const updatedChats = [...prevChats];
-        updatedChats[activeChatIndex].messages = [
-          ...updatedChats[activeChatIndex].messages,
-          errorMessage,
-        ];
-        return updatedChats;
-      });
+      const errorMessage = { id: uuidv4(), role: 'bot', content: 'An unexpected error occurred.', timestamp: Date.now() };
+      addMessageToChat(errorMessage);
       setIsLoading(false); // Set loading state to false after receiving error
     }
   };
+
 
   const toggleSettingsModal = () => {
     setShowSettings(!showSettings);
@@ -138,13 +120,12 @@ const App = () => {
 
   const renameChat = (chatId, newTitle) => {
     setChats((prevChats) => {
-      const updatedChats = prevChats.map((chat) => {
+      return prevChats.map((chat) => {
         if (chat.id === chatId) {
-          return { ...chat, title: newTitle };
+          return {...chat, title: newTitle};
         }
         return chat;
       });
-      return updatedChats;
     });
   };
 
@@ -164,7 +145,7 @@ const App = () => {
           {activeChat ? (
               <>
                 <MessageList messages={activeChat.messages} />
-                <ChatInput onSendMessage={onSendMessage} isLoading={isLoading} toggleSettingsModal={toggleSettingsModal} />
+                <ChatInput onSendMessage={onSendMessage} isLoading={isLoading} />
                 {showSettings && (
                     <Modal isOpen={showSettings} onClose={toggleSettingsModal}>
                       <Settings apiKey={apiKey} model={model} onApiKeyChange={setApiKey} onModelChange={setModel} />

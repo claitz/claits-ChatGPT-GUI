@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faPaperPlane } from '@fortawesome/free-solid-svg-icons';
 
-const ChatInput = ({ onSendMessage, isLoading, toggleSettingsModal }) => {
+const ChatInput = ({ onSendMessage, isLoading }) => {
     const [message, setMessage] = useState('');
 
     const handleSubmit = (e) => {
