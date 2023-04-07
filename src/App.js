@@ -7,6 +7,9 @@ import Settings from "./components/Settings";
 import Sidebar from "./components/Sidebar";
 import {v4 as uuidv4} from 'uuid';
 import io from 'socket.io-client';
+import { ToastContainer, toast } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
+
 
 const SOCKET_SERVER_ADDRESS = process.env.WS_HOST || 'ws://localhost:3001';
 
@@ -69,10 +72,31 @@ const App = () => {
     const newSocket = io(SOCKET_SERVER_ADDRESS);
     setSocket(newSocket);
 
+    // Notify the user when connected to the server
+    newSocket.on('connect', () => {
+      toast.success('Connected to the backend');
+    });
+
+    // Notify the user when disconnected from the server
+    newSocket.on('disconnect', () => {
+      toast.error('Disconnected from the backend');
+    });
+
     return () => {
       newSocket.close();
     };
   }, []);
+
+  const handleModelChange = (newModel) => {
+    setModel(newModel);
+    toast.success('Model settings saved');
+  };
+
+  const handleApiKeyChange = (newApiKey) => {
+    setApiKey(newApiKey);
+    toast.success('API key settings saved');
+  };
+
 
   // Add a new message to the active chat
   const addMessageToChat = useCallback((message) => {
@@ -176,11 +200,13 @@ const App = () => {
   // Delete a chat
   const deleteChat = (chatId) => {
     if (chats.length <= 1) {
+      toast.error('Cannot delete the last chat');
       return;
     }
     const remainingChats = chats.filter((chat) => chat.id !== chatId);
     setChats(remainingChats);
     setActiveChatId(remainingChats[0].id);
+    toast.info('Chat deleted');
   };
 
   // Rename a chat
@@ -193,10 +219,23 @@ const App = () => {
         return chat;
       });
     });
+    toast.info('Chat renamed');
   };
 
   return (
       <div className="App">
+        <ToastContainer
+            position="top-center"
+            autoClose={1000}
+            hideProgressBar
+            newestOnTop
+            closeOnClick
+            rtl={false}
+            pauseOnFocusLoss={false}
+            draggable={false}
+            pauseOnHover
+            theme="dark"
+        />
         <Sidebar
             chats={chats}
             activeChat={activeChat}
@@ -209,11 +248,11 @@ const App = () => {
         <div className="chatbox">
           {activeChat ? (
               <>
-                <MessageList messages={activeChat.messages} />
+                <MessageList messages={activeChat.messages} toast={toast}/>
                 <ChatInput onSendMessage={onSendMessage} isLoading={isLoading} />
                 {showSettings && (
                     <Modal isOpen={showSettings} onClose={toggleSettingsModal}>
-                      <Settings apiKey={apiKey} model={model} onApiKeyChange={setApiKey} onModelChange={setModel} />
+                      <Settings apiKey={apiKey} model={model} onApiKeyChange={handleApiKeyChange} onModelChange={handleModelChange} />
                     </Modal>
                 )}
               </>
