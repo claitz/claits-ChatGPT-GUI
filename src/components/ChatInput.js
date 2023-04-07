@@ -31,7 +31,7 @@ const ChatInput = ({ onSendMessage, isLoading }) => {
                     onKeyPress={handleKeyPress}
                     style={{ width: '100%' }}
                 />
-                <div>
+                <div className="send-button-container">
                     <button onClick={handleSubmit} disabled={isLoading || !message.trim()} className="send-button">
                         <FontAwesomeIcon icon={faPaperPlane} />
                     </button>
