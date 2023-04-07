@@ -20,7 +20,6 @@ const Sidebar = ({ chats, activeChat, onChatSelect, onCreateChat, onDeleteChat, 
         <div className="sidebar">
             <div className="sidebar-content">
                 <div className="sidebar-header">
-                    <h2>Chats</h2>
                     <button className="new-chat-button" onClick={onCreateChat}>
                         <FontAwesomeIcon icon={faSquarePlus} />
                     </button>
