@@ -12,8 +12,20 @@ Simple GUI to interact with various ChatGPT models via API.
 
 - Model selection
 - Multiple chat sessions
-- History [TBD]
-- Light/dark mode toggle [TBD]
+- Locally stored chat history
+- Image generation
+- `.env` configuration
+- ~~Light/dark mode toggle [TBD]~~
+
+## .env
+
+All configuration is done via `.env` file, although default values are provided as fallbacks.
+The following variables are available:
+
+- `WATCHPACK_POLLING=true` - Enable polling for file changes
+- `REACT_APP_WS_PORT=3001` - Port for the websocket server
+- `REACT_APP_WS_HOST=localhost` - Host for the websocket server
+- `REACT_APP_IMAGE_REQUEST=/imagine` - Command for image generation
 
 ## License
 

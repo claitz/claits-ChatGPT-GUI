@@ -1,7 +1,8 @@
 const socketIO = require('socket.io');
 const { fetchStreamedChatContent } = require('streamed-chatgpt-api');
+const axios = require('axios');
 
-const PORT = process.env.WS_PORT || 3001;
+const PORT = process.env.REACT_APP_WS_PORT || 3001;
 
 const io = socketIO(PORT, {
     cors: {
@@ -10,7 +11,44 @@ const io = socketIO(PORT, {
     },
 });
 io.on('connection', (socket) => {
-    console.log('Client connected');
+
+    socket.on('imagine', async (data) => {
+        const { apiKey, prompt } = data;
+
+        if (!apiKey) {
+            socket.emit('error', { error: 'No API key provided.' });
+            return;
+        }
+
+        try {
+            const response = await axios.post(
+                'https://api.openai.com/v1/images/generations',
+                {
+                    prompt,
+                    n: 1,
+                    size: '1024x1024',
+                },
+                {
+                    headers: {
+                        'Authorization': `Bearer ${apiKey}`,
+                        'Content-Type': 'application/json',
+                    },
+                }
+            );
+
+
+            const imageUrl = response.data.data[0].url || 'https://i.imgur.com/xFhXMD7.jpeg'; // Test image
+
+            console.log(imageUrl)
+            const botMessage = { role: 'bot', content: imageUrl, timestamp: Date.now(), isImage: true };
+
+            socket.emit('bot image', botMessage);
+
+        } catch (error) {
+            socket.emit('error', { error: error.message });
+        }
+
+    });
 
     socket.on('chat message', async (data) => {
         const {

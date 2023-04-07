@@ -10,8 +10,9 @@ import io from 'socket.io-client';
 import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 
+const SOCKET_SERVER_ADDRESS = process.env.REACT_APP_WS_HOST || 'localhost';
 
-const SOCKET_SERVER_ADDRESS = process.env.WS_HOST || 'ws://localhost:3001';
+const IMAGE_REQUEST = process.env.REACT_APP_IMAGE_REQUEST || '/image';
 
 const STORAGE_KEYS = {
   chats: 'chats',
@@ -111,6 +112,10 @@ const App = () => {
     });
   }, [activeChatId]);
 
+  const isImageRequest = (message) => {
+    return message.trim().startsWith(IMAGE_REQUEST);
+  };
+
 
   // Set up event listeners for the bot message and error events
   useEffect(() => {
@@ -125,7 +130,10 @@ const App = () => {
             const activeChatIndex = prevChats.findIndex((chat) => chat.id === activeChatId);
             const updatedMessages = [...prevChats[activeChatIndex].messages];
             const botMessageIndex = updatedMessages.findIndex((msg) => msg.id === currentBotMessageId);
-            updatedMessages[botMessageIndex].content = data.reply;
+
+            if (updatedMessages[botMessageIndex]) {
+              updatedMessages[botMessageIndex].content = data.reply;
+            }
 
             return [
               ...prevChats.slice(0, activeChatIndex),
@@ -144,6 +152,17 @@ const App = () => {
         }
       });
 
+      socket.on('bot image', (data) => {
+        const imageMessage = {
+          id: uuidv4(),
+          role: 'bot',
+          content: data.content,
+          timestamp: data.timestamp,
+          isImage: true,
+        };
+        addMessageToChat(imageMessage);
+        setIsLoading(false);
+      });
 
       socket.on('error', (data) => {
         const errorMessage = { id: uuidv4(), role: 'bot', content: data.error, timestamp: Date.now() };
@@ -156,6 +175,7 @@ const App = () => {
       if (socket) {
         socket.off('bot message');
         socket.off('error');
+        socket.off('bot image'); // Add this line
       }
     };
   }, [socket, addMessageToChat, activeChatId, currentBotMessageId]);
@@ -169,11 +189,17 @@ const App = () => {
 
     setIsLoading(true); // Set loading state to true
 
-    if (socket) {
-      socket.emit('chat message', { messageInput: message, model, apiKey });
+    if (isImageRequest(message)) {
+      const prompt = message.replace('/imagine', '').trim();
+      if (socket) {
+        socket.emit('imagine', { prompt, apiKey });
+      }
+    } else {
+      if (socket) {
+        socket.emit('chat message', { messageInput: message, model, apiKey });
+      }
     }
   };
-
 
   // Toggle the settings modal
   const toggleSettingsModal = () => {

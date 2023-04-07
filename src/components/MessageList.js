@@ -13,7 +13,7 @@ const MessageList = ({ messages, toast }) => {
     return (
         <div className="message-list" ref={messageListRef}>
             {messages.map((message, index) => (
-                <Message key={index} message={message.content} isUser={message.role === 'user'} timestamp={message.timestamp} toast={toast} />
+                <Message key={index} message={message} isUser={message.role === 'user'} timestamp={message.timestamp} toast={toast} />
             ))}
         </div>
     );
