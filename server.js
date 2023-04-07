@@ -1,76 +1,92 @@
-const express = require('express');
-const bodyParser = require('body-parser');
-const cors = require('cors');
-const http = require('http');
-const { Server } = require('socket.io');
-const axios = require('axios');
+const socketIO = require('socket.io');
+const { fetchStreamedChatContent } = require('streamed-chatgpt-api');
 
-const app = express();
-app.use(bodyParser.json());
-app.use(cors());
+const PORT = process.env.WS_PORT || 3001;
 
-const PORT = process.env.PORT || 3001;
-
-const server = http.createServer(app);
-const io = new Server(server, {
+const io = socketIO(PORT, {
     cors: {
         origin: '*',
         methods: ['GET', 'POST'],
     },
 });
-
-const handleMessage = async (socket, data) => {
-    try {
-        console.log(data);
-
-        const { message, conversationHistory } = data;
-
-        const messages = [
-            ...(conversationHistory || []),
-            {
-                role: "user",
-                content: message,
-            },
-        ];
-
-        const response = await axios.post(
-            'https://api.openai.com/v1/chat/completions',
-            {
-                model: data.model,
-                messages: messages,
-            },
-            {
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${data.apiKey}`,
-                },
-            }
-        );
-        const reply = response.data.choices[0].message.content;
-
-        if (reply !== '') {
-            socket.emit('bot message', { reply: reply.trim() });
-        } else {
-            socket.emit('error', { error: 'Something bad happened.' });
-        }
-    } catch (error) {
-        console.error(error);
-        const errorMessage = error.response?.data?.error?.message || 'An error occurred while processing the request.';
-        socket.emit('error', { error: errorMessage });
-    }
-};
 io.on('connection', (socket) => {
-    console.log('A user connected');
-
-    socket.on('disconnect', () => {
-        console.log('A user disconnected');
-    });
+    console.log('Client connected');
 
     socket.on('chat message', async (data) => {
-        await handleMessage(socket, data);
+        const {
+            apiKey,
+            messageInput,
+            apiUrl,
+            model,
+            temperature,
+            topP,
+            n,
+            stop,
+            maxTokens,
+            presencePenalty,
+            frequencyPenalty,
+            logitBias,
+            user,
+            retryCount,
+            fetchTimeout,
+            readTimeout,
+            retryInterval,
+            totalTime,
+        } = data;
+
+        if (!apiKey) {
+            socket.emit('error', { error: 'No API key provided.' });
+            return;
+        }
+
+        let currentBotMessage = '';
+        let isFirstChunk = true;
+
+        try {
+            fetchStreamedChatContent(
+                {
+                    apiKey,
+                    messageInput,
+                    apiUrl,
+                    model,
+                    temperature,
+                    topP,
+                    n,
+                    stop,
+                    maxTokens,
+                    presencePenalty,
+                    frequencyPenalty,
+                    logitBias,
+                    user,
+                    retryCount,
+                    fetchTimeout,
+                    readTimeout,
+                    retryInterval,
+                    totalTime,
+                },
+                (content) => {
+                    // onResponse
+                    currentBotMessage += content;
+                    socket.emit('bot message', { reply: currentBotMessage, isNewMessage: isFirstChunk, isFinished: false });
+                    isFirstChunk = false;
+                },
+                () => {
+                    // onFinish
+                    socket.emit('bot message', { reply: currentBotMessage, isNewMessage: false, isFinished: true });
+                },
+                (error) => {
+                    // onError
+                    socket.emit('error', { error: error.message });
+                }
+            );
+        } catch (error) {
+            socket.emit('error', { error: error.message });
+        }
+    });
+
+    socket.on('disconnect', () => {
+        console.log('Client disconnected');
     });
 });
 
-server.listen(PORT, () => {
-    console.log(`Server is running on port ${PORT}`);
-});
+console.log(`Server listening on port ${PORT}`);

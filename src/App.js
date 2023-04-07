@@ -8,7 +8,7 @@ import Sidebar from "./components/Sidebar";
 import {v4 as uuidv4} from 'uuid';
 import io from 'socket.io-client';
 
-const SOCKET_SERVER_ADDRESS = process.env.REACT_APP_SOCKET_SERVER_ADDRESS || 'http://localhost:3001';
+const SOCKET_SERVER_ADDRESS = process.env.WS_HOST || 'ws://localhost:3001';
 
 const STORAGE_KEYS = {
   chats: 'chats',
@@ -36,6 +36,8 @@ const App = () => {
   const [showSettings, setShowSettings] = useState(false);
   const activeChat = useMemo(() => chats.find((chat) => chat.id === activeChatId), [chats, activeChatId]);
   const [isLoading, setIsLoading] = useState(false);
+  const [currentBotMessageId, setCurrentBotMessageId] = useState(null);
+
 
   useEffect(() => {
     localStorage.setItem(STORAGE_KEYS.chats, JSON.stringify(chats));
@@ -90,10 +92,34 @@ const App = () => {
   useEffect(() => {
     if (socket) {
       socket.on('bot message', (data) => {
-        const botMessage = { id: uuidv4(), role: 'bot', content: data.reply, timestamp: Date.now() };
-        addMessageToChat(botMessage);
-        setIsLoading(false);
+        if (data.isNewMessage) {
+          const botMessage = { id: uuidv4(), role: 'bot', content: data.reply, timestamp: Date.now() };
+          addMessageToChat(botMessage);
+          setCurrentBotMessageId(botMessage.id);
+        } else {
+          setChats((prevChats) => {
+            const activeChatIndex = prevChats.findIndex((chat) => chat.id === activeChatId);
+            const updatedMessages = [...prevChats[activeChatIndex].messages];
+            const botMessageIndex = updatedMessages.findIndex((msg) => msg.id === currentBotMessageId);
+            updatedMessages[botMessageIndex].content = data.reply;
+
+            return [
+              ...prevChats.slice(0, activeChatIndex),
+              {
+                ...prevChats[activeChatIndex],
+                messages: updatedMessages,
+              },
+              ...prevChats.slice(activeChatIndex + 1),
+            ];
+          });
+        }
+
+        if (data.isFinished) {
+          setIsLoading(false);
+          setCurrentBotMessageId(null);
+        }
       });
+
 
       socket.on('error', (data) => {
         const errorMessage = { id: uuidv4(), role: 'bot', content: data.error, timestamp: Date.now() };
@@ -108,7 +134,9 @@ const App = () => {
         socket.off('error');
       }
     };
-  }, [socket, addMessageToChat]);
+  }, [socket, addMessageToChat, activeChatId, currentBotMessageId]);
+
+
 
   // Send a message to the bot
   const onSendMessage = (message) => {
@@ -118,9 +146,10 @@ const App = () => {
     setIsLoading(true); // Set loading state to true
 
     if (socket) {
-      socket.emit('chat message', { message, model, apiKey });
+      socket.emit('chat message', { messageInput: message, model, apiKey });
     }
   };
+
 
   // Toggle the settings modal
   const toggleSettingsModal = () => {
