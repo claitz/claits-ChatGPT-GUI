@@ -80,9 +80,8 @@ const App = () => {
       addMessageToChat(botMessage);
       setIsLoading(false); // Set loading state to false after receiving response
     } catch (error) {
-      console.error('Error sending message:', error);
-
-      const errorMessage = { id: uuidv4(), role: 'bot', content: 'An unexpected error occurred.', timestamp: Date.now() };
+      console.error('Error sending message:', error.response?.data?.error || error);
+      const errorMessage = { id: uuidv4(), role: 'bot', content: error.response?.data?.error || 'An unexpected error occurred.', timestamp: Date.now() };
       addMessageToChat(errorMessage);
       setIsLoading(false); // Set loading state to false after receiving error
     }
