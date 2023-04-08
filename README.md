@@ -2,9 +2,10 @@
 
 Simple GUI to interact with various ChatGPT models via API.
 
-## How to run
+This was created to provide an alternative to the amazing [PatrikZeros ChatGPT API UI](https://github.com/patrikzudel/PatrikZeros-ChatGPT-API-UI) and to be easily deployable via Docker.
 
-### Docker
+## How to run
+### Docker (recommended)
 
 - Install [Docker](https://docs.docker.com/get-docker/)
 - Build the image with `docker build -t claits-chatgpt-gui .`
@@ -25,7 +26,17 @@ Simple GUI to interact with various ChatGPT models via API.
 - Locally stored chat history
 - Image generation
 - `.env` configuration
+- Websocket server
 - ~~Light/dark mode toggle [TBD]~~
+
+Text request with response streaming:
+
+![Text Request](https://media.giphy.com/media/v1.Y2lkPTc5MGI3NjExZDczZGUwYzNkZDMwODhmMTAxOGFlNzAyMzJjZmE1ZjllOTg5OTQzZSZjdD1n/GhhmBwQsWyGhJnxSDA/giphy.gif)
+
+
+Image request:
+
+![Image Request](https://media.giphy.com/media/v1.Y2lkPTc5MGI3NjExOTlmZWZmZjAyYzcxYWRjZDExMzJlZDUxNjc5NGEzN2QxNzlkMmJmYiZjdD1n/F46Uq08HDhEMLgmF1P/giphy.gif)
 
 ## .env
 
