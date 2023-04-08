@@ -47,6 +47,9 @@ COPY  /server/Server.js .
 # Copy the build directory from the frontend-build stage
 COPY --from=frontend-build /app/build /app/build
 
+# Create the images directory where the images will be stored for the chat history and the frontend
+RUN mkdir -p /server/images
+
 # Expose the port on which the backend will listen and the frontend will be served
 EXPOSE 3001
 EXPOSE 5000

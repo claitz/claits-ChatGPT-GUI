@@ -12,6 +12,8 @@ This was created to provide an alternative to the amazing [PatrikZeros ChatGPT A
 - Run the container with `docker run -p 3001:3001 -p 5000:5000 --name claits-chatgpt-gui claits-chatgpt-gui`
 - Open `localhost:5000` in your browser
 
+You can set the environment variables in the `docker-compose.yml` file or editing your running stack.
+
 ### Manual
 
 - Install the frontend dependencies: `pnpm install`
@@ -19,15 +21,18 @@ This was created to provide an alternative to the amazing [PatrikZeros ChatGPT A
 - Start the server: `pnpm run server`
 - Start the frontend: `pnpm run start`
 
+When you run this manually (outside of Docker), you need to set the environment variables in `.env` by renaming `.env.example` to `.env` and editing the values as needed.
+
+The default values will work in most setups.
+
 ## Features
 
 - Model selection
 - Multiple chat sessions
 - Locally stored chat history
-- Image generation
+- Image generation with persistent local storage
 - `.env` configuration
 - Websocket server
-- ~~Light/dark mode toggle [TBD]~~
 
 Text request with response streaming:
 
@@ -38,15 +43,6 @@ Image request:
 
 ![Image Request](https://media.giphy.com/media/v1.Y2lkPTc5MGI3NjExOTlmZWZmZjAyYzcxYWRjZDExMzJlZDUxNjc5NGEzN2QxNzlkMmJmYiZjdD1n/F46Uq08HDhEMLgmF1P/giphy.gif)
 
-## .env
-
-All configuration is done via `.env` file, although default values are provided as fallbacks.
-The following variables are available:
-
-- `WATCHPACK_POLLING=true` - Enable polling for file changes
-- `REACT_APP_WS_PORT=3001` - Port for the websocket server
-- `REACT_APP_WS_HOST=localhost` - Host for the websocket server
-- `REACT_APP_IMAGE_REQUEST=/imagine` - Command for image generation
 
 ## License
 
