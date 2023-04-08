@@ -5,6 +5,9 @@
 /.pnp
 .pnp.js
 
+# server
+/server/node_modules
+
 # testing
 /coverage
 
