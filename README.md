@@ -1,10 +1,20 @@
-# clait's ChatGPT API GUI - Attempt #2
+# clait's ChatGPT API GUI
 
 Simple GUI to interact with various ChatGPT models via API.
 
 ## How to run
 
-- Install dependencies: `pnpm install`
+### Docker
+
+- Install [Docker](https://docs.docker.com/get-docker/)
+- Build the image with `docker build -t claits-chatgpt-gui .`
+- Run the container with `docker run -p 3001:3001 -p 5000:5000 --name claits-chatgpt-gui claits-chatgpt-gui`
+- Open `localhost:5000` in your browser
+
+### Manual
+
+- Install the frontend dependencies: `pnpm install`
+- Install the server dependencies: `cd server && pnpm install`
 - Start the server: `pnpm run server`
 - Start the frontend: `pnpm run start`
 

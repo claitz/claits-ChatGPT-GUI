@@ -1,11 +1,10 @@
-const socketIO = require('socket.io');
-const { fetchStreamedChatContent } = require('streamed-chatgpt-api');
-const axios = require('axios');
-
+import { Server as socketIO } from 'socket.io';
+import { fetchStreamedChatContent } from 'streamed-chatgpt-api';
+import axios from 'axios';
 
 const PORT = process.env.REACT_APP_WS_PORT || 3001;
 
-const io = socketIO(PORT, {
+const io = new socketIO(PORT, {
     cors: {
         origin: '*',
         methods: ['GET', 'POST'],
@@ -18,6 +17,7 @@ io.on('connection', (socket) => {
 
         if (!apiKey) {
             socket.emit('error', { error: 'No API key provided.' });
+            console.log('No API key provided.')
             return;
         }
 
@@ -46,6 +46,7 @@ io.on('connection', (socket) => {
             socket.emit('bot image', botMessage);
 
         } catch (error) {
+            console.log(error)
             socket.emit('error', { error: error.message });
         }
 
@@ -75,6 +76,7 @@ io.on('connection', (socket) => {
 
         if (!apiKey) {
             socket.emit('error', { error: 'No API key provided.' });
+            console.log('No API key provided.')
             return;
         }
 
@@ -116,10 +118,12 @@ io.on('connection', (socket) => {
                 (error) => {
                     // onError
                     socket.emit('error', { error: error.message });
+                    console.log(error)
                 }
             );
         } catch (error) {
             socket.emit('error', { error: error.message });
+            console.log(error)
         }
     });
 

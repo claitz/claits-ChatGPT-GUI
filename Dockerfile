@@ -1,35 +1,55 @@
-# Use an official Node.js runtime as a parent image
-FROM node:16-alpine3.14
+# ---- FRONTEND ----
+# Import the base image
+FROM node:19-alpine as frontend-build
 
-# Set the working directory to /app
+# Set the working directory
 WORKDIR /app
 
-# Copy the main app's package.json and package-lock.json files to the container
+# Install pnpm
+RUN npm install -g pnpm
+
+# Copy the package.json and pnpm-lock.yaml files
 COPY package*.json ./
+COPY pnpm-lock.yaml ./
 
-# Install dependencies for the main app
-RUN npm install --omit=dev
+# Install the dependencies
+RUN pnpm install -P
 
-# Copy the main app files to the container
+# Copy the rest of the files
 COPY . .
 
-# Build the frontend for the main app
-RUN npm run build
+# Build the frontend
+RUN pnpm run build
 
-# Switch to the server directory
-WORKDIR /app/server
+# ---- BACKEND ----
+# Import the base image
+FROM node:19-alpine as backend-build
 
-# Copy the server package.json and package-lock.json files to the container
-COPY server/package*.json ./
+# Set the working directory
+WORKDIR /app
 
-# Install dependencies for the server
-RUN npm install --omit=dev
+# Install and pnpm
+RUN npm install -g pnpm
 
-# Copy the server files to the container
-COPY server/ .
+# Copy the package.json and pnpm-lock.yaml files
+COPY /server/package*.json ./
+COPY /server/pnpm-lock.yaml ./
 
-# Expose the port on which the server will listen
-EXPOSE 3000
+# Install the dependencies
+RUN pnpm install -P
 
-# Start the server with --experimental-modules flag
-CMD ["node", "--experimental-modules", "server.js"]
+# Install serve to serve the frontend
+RUN npm install -g serve
+
+# Copy the backend files
+COPY  /server/Server.js .
+
+# Copy the build directory from the frontend-build stage
+COPY --from=frontend-build /app/build /app/build
+
+# Expose the port on which the backend will listen and the frontend will be served
+EXPOSE 3001
+EXPOSE 5000
+
+# Start the server and serve the frontend
+CMD ["sh", "-c", "node Server.js & serve -s /app/build -l 5000"]

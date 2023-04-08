@@ -1,6 +1,6 @@
 {
-  "name": "clait's chatgpt-gui",
-  "version": "0.2.0",
+  "name": "clait's chatgpt-gui frontend",
+  "version": "1.0.0",
   "private": true,
   "dependencies": {
     "@fortawesome/fontawesome-svg-core": "^6.4.0",
@@ -19,7 +19,7 @@
     "yet-another-react-lightbox": "^3.4.0"
   },
   "scripts": {
-    "server": "node server/server.js",
+    "server": "node server/Server.js",
     "start": "react-scripts start",
     "build": "react-scripts build",
     "test": "webpack-dev-server --mode development --open"
