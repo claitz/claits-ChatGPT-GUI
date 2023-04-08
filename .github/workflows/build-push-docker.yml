@@ -20,8 +20,8 @@ jobs:
 
       - name: Build Docker Image
         if: contains(github.event.head_commit.message, 'BUILD')
-        run: docker build -t my-dockerhub-username/my-docker-image-name:latest .
+        run: docker build -t claitz/claits-chatgpt-gui:latest .
 
       - name: Push Docker Image
         if: contains(github.event.head_commit.message, 'BUILD')
-        run: docker push my-dockerhub-username/my-docker-image-name:latest
+        run: docker push claitz/claits-chatgpt-gui:latest
