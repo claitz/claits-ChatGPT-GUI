@@ -1,0 +1,22 @@
+version: '3.3'
+
+services:
+  claits-chatgpt-gui:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: claits-chatgpt-gui
+    container_name: claits-chatgpt-gui
+    ports:
+      - "3001:3001"
+      - "5000:5000"
+    volumes:
+      - images-data:/app/images
+    environment:
+      - WATCHPACK_POLLING=true
+      - REACT_APP_WS_PORT=3001
+      - REACT_APP_BACKEND_HOST=http://localhost:3001
+      - REACT_APP_IMAGE_REQUEST=/imagine
+
+volumes:
+    images-data:
