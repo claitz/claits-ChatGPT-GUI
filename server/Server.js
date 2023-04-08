@@ -62,7 +62,7 @@ io.on('connection', (socket) => {
 
                 const imageUrl = response.data.data[0].url || 'https://i.imgur.com/xFhXMD7.jpeg'; // Test image
                 const sanitizedPrompt = sanitizeFilename(prompt);
-                const imageFileName = `${sanitizedPrompt}.jpeg`;
+                const imageFileName = `${Date.now()}-${sanitizedPrompt}.jpeg`;
 
                 console.log(imageUrl)
 
