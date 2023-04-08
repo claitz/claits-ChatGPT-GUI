@@ -6,17 +6,22 @@ on:
       - master
 
 jobs:
-  build-and-push:
+  build_and_push:
     runs-on: ubuntu-latest
-    if: "contains(toUpper(github.event.head_commit.message), 'BUILD')"
     steps:
-      - name: Checkout
+      - name: Checkout Repository
         uses: actions/checkout@v2
 
-      - name: Build and push Docker image
-        uses: docker/build-push-action@v2
+      - name: Login to DockerHub
+        uses: docker/login-action@v1
         with:
-          context: .
-          push: true
-          tags: claitz/claits-chatgpt-gui:latest
-          dockerfile: Dockerfile
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Build Docker Image
+        if: contains(github.event.head_commit.message, 'BUILD')
+        run: docker build -t my-dockerhub-username/my-docker-image-name:latest .
+
+      - name: Push Docker Image
+        if: contains(github.event.head_commit.message, 'BUILD')
+        run: docker push my-dockerhub-username/my-docker-image-name:latest
