@@ -10,7 +10,7 @@ import io from 'socket.io-client';
 import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 
-const SOCKET_SERVER_ADDRESS = process.env.REACT_APP_WS_HOST || 'http://localhost:3001';
+const SOCKET_SERVER_ADDRESS = process.env.REACT_APP_BACKEND_HOST || 'http://localhost:3001';
 
 const IMAGE_REQUEST = process.env.REACT_APP_IMAGE_REQUEST || '/image';
 

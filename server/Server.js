@@ -8,7 +8,7 @@ import path from 'path';
 
 
 const PORT = process.env.REACT_APP_WS_PORT || 3001;
-const backendUrl = process.env.REACT_APP_BACKEND_URL || `http://localhost:${PORT}`;
+const backendUrl = process.env.REACT_APP_BACKEND_HOST || `http://localhost:${PORT}`;
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
