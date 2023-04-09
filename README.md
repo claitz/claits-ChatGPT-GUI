@@ -34,7 +34,7 @@ Image request:
 A prebuilt Docker image is available on [Docker Hub](https://hub.docker.com/r/claitz/claits-chatgpt-gui).
 
 - Install [Docker](https://docs.docker.com/get-docker/)
-- Run `docker run -p 3001:3001 -p 5000:5000 --name claits-chatgpt-gui claitz/claits-chatgpt-gui`
+- Run `docker run -p 3001:3001 -p 5000:5000 --name claits-chatgpt-gui claitz/claits-chatgpt-gui:latest`
 - Open `localhost:5000` in your browser
 
 ### Build and run the image yourself
@@ -43,9 +43,7 @@ You can also clone and build the image yourself:
 
 - Clone this repository
 - Build the image with `docker build -t claits-chatgpt-gui .`
-- Run the container with one of the following commands:
-  - `docker run -p 3001:3001 -p 5000:5000 --name claits-chatgpt-gui claits-chatgpt-gui` (without Docker Compose)
-  - `docker-compose up -d` (with Docker Compose)
+- Run the container
 - Open `localhost:5000` in your browser
 
 You can set the environment variables in the `docker-compose.yml` file or editing your running stack.

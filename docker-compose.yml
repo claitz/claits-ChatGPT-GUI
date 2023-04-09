@@ -2,10 +2,7 @@ version: '3.3'
 
 services:
   claits-chatgpt-gui:
-    build:
-      context: .
-      dockerfile: Dockerfile
-    image: claits-chatgpt-gui
+    image: claitz/claits-chatgpt-gui:latest
     container_name: claits-chatgpt-gui
     ports:
       - "3001:3001"
