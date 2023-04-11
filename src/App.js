@@ -75,9 +75,8 @@ const App = () => {
     setIsLoading(true); // Set loading state to true
 
     if (isImageRequest(message)) {
-      const prompt = message.replace(IMAGE_REQUEST, '').trim();
       if (socket) {
-        socket.emit('image request', {chatId: activeChatId, prompt, apiKey });
+        socket.emit('image request', {chatId: activeChatId, message, apiKey, IMAGE_REQUEST });
       }
     } else {
       if (socket) {
@@ -190,8 +189,10 @@ const App = () => {
             toggleSettingsModal={toggleSettingsModal}
         />
         <div className="chatbox">
+
           {activeChat ? (
               <>
+                <div className="chatbox-header">{activeChat.title}</div>
                 <MessageList messages={activeChat.messages} toast={toast}/>
                 <ChatInput onSendMessage={onSendMessage} isLoading={isLoading} />
                 {showSettings && (

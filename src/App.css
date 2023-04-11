@@ -14,7 +14,19 @@
   flex-direction: column;
   height: 100%;
   flex: 1;
-  padding-left: 10px;
+  //padding-left: 10px;
+}
+
+.chatbox-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1rem;
+    background-color: #202123;
+    box-shadow: 0 2px rgba(0, 0, 0, 0.3);
+    color: #fff;
+    font-size: 1.2rem;
+    font-weight: bold;
 }
 
 /* Responsive styles */
@@ -102,11 +114,12 @@
   background-color: #40414f;
   border-radius: 1rem;
   padding: 1rem;
-  margin-bottom: 1rem;
+  /*margin-bottom: 1rem;*/
   max-width: 50%;
   word-wrap: break-word;
   white-space: pre-wrap;
   box-shadow: 0 0 8px rgba(0, 0, 0, 0.3);
+  margin: 10px 0 0 10px;
 }
 
 .bot {
