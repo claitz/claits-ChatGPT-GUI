@@ -11,6 +11,8 @@ import dotenv from 'dotenv';
 
 dotenv.config();
 
+const maxPromptLength = 200;
+
 const PORT = process.env.REACT_APP_WS_PORT || 3001;
 const backendUrl = process.env.REACT_APP_BACKEND_HOST || `http://localhost:${PORT}`;
 
@@ -252,7 +254,9 @@ io.on('connection', (socket) => {
                 );
 
                 const imageUrl = response.data.data[0].url || 'https://i.imgur.com/xFhXMD7.jpeg'; // Test image
-                const sanitizedPrompt = sanitizeFilename(prompt);
+
+                let sanitizedPrompt = sanitizeFilename(prompt);
+                sanitizedPrompt = sanitizedPrompt.substring(0, maxPromptLength);
 
                 const timestamp = Date.now();
                 const imageFileName = `${timestamp}-${sanitizedPrompt}.jpeg`;
