@@ -34,9 +34,6 @@ dependencies:
   socket.io-client:
     specifier: ^4.6.1
     version: 4.6.1
-  uuid:
-    specifier: ^9.0.0
-    version: 9.0.0
   web-vitals:
     specifier: ^2.1.4
     version: 2.1.4
@@ -9624,11 +9621,6 @@ packages:
 
   /uuid@8.3.2:
     resolution: {integrity: sha512-+NYs2QeMWy+GWFOEm9xnn6HCDp0l7QBD7ml8zLUmJ+93Q5NF0NocErnwkTkXVFNiX3/fpC6afS8Dhb/gz7R7eg==}
-    hasBin: true
-    dev: false
-
-  /uuid@9.0.0:
-    resolution: {integrity: sha512-MXcSTerfPa4uqyzStbRoTgt5XIe3x5+42+q1sDuy3R5MDk66URdLMOZe5aPX/SQd+kuYAh0FdP/pO28IkQyTeg==}
     hasBin: true
     dev: false
 

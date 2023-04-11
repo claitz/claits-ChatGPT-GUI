@@ -3,7 +3,7 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faTrash, faSquarePlus, faGear, faPenToSquare } from '@fortawesome/free-solid-svg-icons';
 
 
-const Sidebar = ({ chats, activeChat, onChatSelect, onCreateChat, onDeleteChat, onRenameChat, toggleSettingsModal}) => {
+const Sidebar = ({ chats = [], activeChat, onChatSelect, onCreateChat, onDeleteChat, onRenameChat, toggleSettingsModal}) => {
 
     const [editingChatId, setEditingChatId] = React.useState(null);
     const handleEditChatTitle = (event, chatId) => {
@@ -25,7 +25,7 @@ const Sidebar = ({ chats, activeChat, onChatSelect, onCreateChat, onDeleteChat, 
                     </button>
                 </div>
                 <ul className="sidebar-chat-list">
-                    {chats.map((chat) => (
+                    {(chats || []).map((chat)  => (
                         <li
                             key={chat.id}
                             className={activeChat === chat ? 'selected' : ''}
