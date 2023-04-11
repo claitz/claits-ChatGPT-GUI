@@ -222,7 +222,7 @@ io.on('connection', (socket) => {
     });
 
     socket.on('image request', async (data) => {
-            const {chatId, apiKey, prompt} = data;
+            const {chatId, apiKey, message, imageCommand } = data;
 
             if (!apiKey) {
                 socket.emit('error', {error: 'No API key provided.'});
@@ -231,7 +231,9 @@ io.on('connection', (socket) => {
             }
             let userMessageId = uuidv4();
 
-            await addMessageToChat(chatId, userMessageId, 'user', prompt,false, socket);
+            await addMessageToChat(chatId, userMessageId, 'user', message,false, socket);
+
+            const prompt = message.replace(imageCommand, '').trim();
 
             try {
                 const response = await axios.post(

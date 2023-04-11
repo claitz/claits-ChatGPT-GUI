@@ -11,7 +11,7 @@ import Sidebar from "./components/Sidebar";
 
 const SOCKET_SERVER_ADDRESS = process.env.REACT_APP_BACKEND_HOST || 'http://localhost:3001';
 
-const IMAGE_REQUEST = process.env.REACT_APP_IMAGE_REQUEST || '/image';
+const imageCommand = process.env.REACT_APP_IMAGE_REQUEST || '/image';
 
 const App = () => {
 
@@ -67,7 +67,7 @@ const App = () => {
 
   // Is this a message requesting an image?
   const isImageRequest = (message) => {
-    return message.trim().startsWith(IMAGE_REQUEST);
+    return message.trim().startsWith(imageCommand);
   };
 
   // Send a message to the bot
@@ -76,7 +76,7 @@ const App = () => {
 
     if (isImageRequest(message)) {
       if (socket) {
-        socket.emit('image request', {chatId: activeChatId, message, apiKey, IMAGE_REQUEST });
+        socket.emit('image request', {chatId: activeChatId, message, apiKey, imageCommand});
       }
     } else {
       if (socket) {
