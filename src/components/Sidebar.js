@@ -24,50 +24,55 @@ const Sidebar = ({ chats = [], activeChat, onChatSelect, onCreateChat, onDeleteC
                         <FontAwesomeIcon icon={faSquarePlus} />
                     </button>
                 </div>
-                <ul className="sidebar-chat-list">
-                    {(chats || []).map((chat)  => (
-                        <li
-                            key={chat.id}
-                            className={activeChat === chat ? 'selected' : ''}
-                            onClick={() => onChatSelect(chat.id)}
-                        >
-                            {editingChatId === chat.id ? (
-                                <input
-                                    type="text"
-                                    defaultValue={chat.title}
-                                    onKeyDown={(event) => handleEditChatTitle(event, chat.id)}
-                                    onBlur={() => setEditingChatId(null)}
-                                    autoFocus
-                                    className="edit-chat-title"
-                                />
-                            ) : (
-                                <div className="chat-title">
-                                    {chat.title}
-                                    <div className="sidebar-button-container">
-                                        <button
-                                            className="delete-chat-button"
-                                            onClick={(event) => {
-                                                event.stopPropagation();
-                                                setEditingChatId(chat.id);
-                                            }}
-                                        >
-                                            <FontAwesomeIcon icon={faPenToSquare} />
-                                        </button>
-                                        <button
-                                            className="rename-chat-button"
-                                            onClick={(event) => {
-                                                event.stopPropagation();
-                                                onDeleteChat(chat.id);
-                                            }}
-                                        >
-                                            <FontAwesomeIcon icon={faTrash} />
-                                        </button>
-                                    </div>
-                                </div>
-                            )}
-                        </li>
-                    ))}
-                </ul>
+                {chats && chats.length > 0 ? (
+                    <ul className="sidebar-chat-list">
+                        {chats.map((chat) => (
+                                <li
+                                    key={chat.id}
+                                    className={activeChat === chat ? 'selected' : ''}
+                                    onClick={() => onChatSelect(chat.id)}
+                                >
+                                    {editingChatId === chat.id ? (
+                                        <input
+                                            type="text"
+                                            defaultValue={chat.title}
+                                            onKeyDown={(event) => handleEditChatTitle(event, chat.id)}
+                                            onBlur={() => setEditingChatId(null)}
+                                            autoFocus
+                                            className="edit-chat-title"
+                                        />
+                                    ) : (
+                                        <div className="chat-title">
+                                            {chat.title}
+                                            <div className="sidebar-button-container">
+                                                <button
+                                                    className="delete-chat-button"
+                                                    onClick={(event) => {
+                                                        event.stopPropagation();
+                                                        setEditingChatId(chat.id);
+                                                    }}
+                                                >
+                                                    <FontAwesomeIcon icon={faPenToSquare} />
+                                                </button>
+                                                <button
+                                                    className="rename-chat-button"
+                                                    onClick={(event) => {
+                                                        event.stopPropagation();
+                                                        onDeleteChat(chat.id);
+                                                    }}
+                                                >
+                                                    <FontAwesomeIcon icon={faTrash} />
+                                                </button>
+                                            </div>
+                                        </div>
+                                    )}
+                                </li>
+                        ))}
+                    </ul>
+                ) : (
+                    <div className="no-chats-message"></div>
+                )}
+
             </div>
             <div className="sidebar-footer">
                     <button className="settings-button" onClick={toggleSettingsModal}>

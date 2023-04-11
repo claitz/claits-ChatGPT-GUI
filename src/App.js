@@ -16,7 +16,6 @@ const IMAGE_REQUEST = process.env.REACT_APP_IMAGE_REQUEST || '/image';
 const App = () => {
 
   const [chats, setChats] = useState(null);
-
   const [socket, setSocket] = useState(null);
   const [model, setModel] = useState(localStorage.getItem('model') || 'gpt-3.5-turbo');
   const [apiKey, setApiKey] = useState(localStorage.getItem('apiKey') || '');
@@ -119,7 +118,11 @@ const App = () => {
     if (socket) {
       socket.on('chats updated', (chats, chatIndex = 0) => {
         setChats(chats);
-        setActiveChatId(chats[chatIndex].id);
+
+        if (chatIndex !== -1) {
+          setActiveChatId(chats[chatIndex].id);
+        }
+
       });
 
       socket.on('chat created', (newChat) => {
@@ -160,7 +163,7 @@ const App = () => {
         socket.off('bot image');
       }
     };
-  }, [socket, activeChatId, chats]);
+  }, [socket, setActiveChatId, chats]);
 
 
   return (
@@ -198,7 +201,7 @@ const App = () => {
                 )}
               </>
           ) : (
-              <div>Loading...</div>
+              <div className="loading-container">Create a new chat to begin.</div>
           )}
         </div>
       </div>

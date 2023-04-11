@@ -8,10 +8,11 @@ This was created to provide an alternative to the amazing [PatrikZeros ChatGPT A
 
 - Model selection
 - Multiple chat sessions
-- Locally stored chat history
+- Chat history stored to MongoDB
 - Image generation with persistent local storage
 - `.env` configuration
 - Websocket server
+- Streamed bot responses
 
 Text request with response streaming:
 
@@ -31,22 +32,13 @@ Image request:
 [![Docker Image Size (tag)](https://img.shields.io/docker/image-size/claitz/claits-chatgpt-gui/latest)](https://hub.docker.com/r/claitz/claits-chatgpt-gui)
 
 
-A prebuilt Docker image is available on [Docker Hub](https://hub.docker.com/r/claitz/claits-chatgpt-gui).
+A prebuilt Docker image is available on [Docker Hub](https://hub.docker.com/r/claitz/claits-chatgpt-gui) and a docker-compose file is available as example in this repository.
 
 - Install [Docker](https://docs.docker.com/get-docker/)
-- Run `docker run -p 3001:3001 -p 5000:5000 --name claits-chatgpt-gui claitz/claits-chatgpt-gui:latest`
+- Run `docker compose up -d` in the root directory of this repository or wherever you have the `docker-compose.yml` file
 - Open `localhost:5000` in your browser
 
-### Build and run the image yourself
-
-You can also clone and build the image yourself:
-
-- Clone this repository
-- Build the image with `docker build -t claits-chatgpt-gui .`
-- Run the container
-- Open `localhost:5000` in your browser
-
-You can set the environment variables in the `docker-compose.yml` file or editing your running stack.
+This will start the stack (app + MongoDB) and expose the app on port 5000. You can change the configuration in the `docker-compose.yml` file.
 
 ### Manually
 
@@ -55,9 +47,14 @@ You can set the environment variables in the `docker-compose.yml` file or editin
 - Start the server: `pnpm run server`
 - Start the frontend: `pnpm run start`
 
-When you run this manually (outside of Docker), you need to set the environment variables in `.env` by renaming `.env.example` to `.env` and editing the values as needed.
+#### Requirements
+Running this locally requires a MongoDB instance to be running.
 
-The default values will work in most setups.
+
+This and all other configuration options can be set in the `.env` files.
+You'll need to set the environment variables in `.env` by renaming `.env.example` to `.env` and editing the values as needed.
+
+There are **TWO** `.env` files, one in the root directory and one in the `/server` directory - one for the frontend and one for the backend. Both need to be configured.
 
 # License
 
