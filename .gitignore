@@ -28,6 +28,7 @@ yarn-error.log*
 .idea
 
 .env
+/server/.env
 
 # local images downloaded when run locally
 /server/images

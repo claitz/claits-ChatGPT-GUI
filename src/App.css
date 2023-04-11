@@ -32,6 +32,13 @@
   }
 }
 
+.loading-container{
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100%;
+}
+
 .message-list {
   display: flex;
   flex-direction: column;
@@ -165,7 +172,6 @@
   display: flex;
   margin-bottom: 1rem;
 }
-
 
 .chat-input {
   display: flex;

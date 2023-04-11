@@ -6,17 +6,38 @@ import fs from 'fs';
 import { fileURLToPath } from 'url';
 import path from 'path';
 import { v4 as uuidv4 } from 'uuid';
+import { MongoClient } from 'mongodb';
+import dotenv from 'dotenv';
+
+dotenv.config();
 
 const PORT = process.env.REACT_APP_WS_PORT || 3001;
 const backendUrl = process.env.REACT_APP_BACKEND_HOST || `http://localhost:${PORT}`;
 
+// MongoDB configuration
+const mongoUsername = process.env.MONGO_USERNAME;
+const mongoPassword = process.env.MONGO_PASSWORD;
+const mongoHost = process.env.MONGO_HOST;
+const mongoPort = process.env.MONGO_PORT;
+const mongoDbName = process.env.MONGO_DB_NAME || 'chagpt-db';
+const mongoDbUrl = `mongodb://${mongoUsername}:${mongoPassword}@${mongoHost}:${mongoPort}`;
+
+const mongoClient = new MongoClient(mongoDbUrl, { useNewUrlParser: true, useUnifiedTopology: true });
+
+// Connect to MongoDB
+(async () => {
+    try {
+        await mongoClient.connect();
+        console.log('Connected to MongoDB');
+    } catch (error) {
+        console.error('Failed to connect to MongoDB', error);
+    }
+})();
+
+// Image folder configuration
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const imagesFolderPath = path.join(__dirname, 'images');
-
-const chats = [
-    { id: uuidv4(), title: 'Chat 1', messages: [] },
-];
 
 // Create images folder if it doesn't exist
 if (!fs.existsSync(imagesFolderPath)) {
@@ -38,13 +59,13 @@ const io = new socketIO(server, {
     },
 });
 
+// Helper to sanitize filenames
 function sanitizeFilename(prompt) {
     return prompt.replace(/[^a-z0-9]/gi, '_').toLowerCase();
 }
 
-const addMessageToChat = (chats, chatId, messageId, role, content, isImage, socket) => {
-    const chatIndex = chats.findIndex((chat) => chat.id === chatId);
-
+// Adding messages to the chat
+const addMessageToChat = async (chatId, messageId, role, content, isImage, socket) => {
     const message = {
         id: messageId,
         role: role,
@@ -53,68 +74,70 @@ const addMessageToChat = (chats, chatId, messageId, role, content, isImage, sock
         isImage: isImage,
     };
 
-    if (chatIndex !== -1) {
-        chats[chatIndex].messages.push(message);
-        socket.emit('chats updated', chats, chatIndex);
-    }
+    await mongoClient
+        .db(mongoDbName)
+        .collection('chats')
+        .updateOne({ id: chatId }, { $push: { messages: message } });
+
+    const updatedChats = await mongoClient.db(mongoDbName).collection('chats').find().toArray();
+    const chatIndex = updatedChats.findIndex((chat) => chat.id === chatId);
+    socket.emit('chats updated', updatedChats, chatIndex);
 };
 
-const updateBotMessageInChat = (chats, chatId, messageId, content, isImage, socket) => {
-    const chatIndex = chats.findIndex((chat) => chat.id === chatId);
-    let messageIndex = chats[chatIndex].messages.findIndex((msg) => msg.id === messageId);
+// Updating existing messages
+const updateBotMessageInChat = async (chatId, messageId, content, isImage, socket) => {
+    await mongoClient.db(mongoDbName).collection('chats').updateOne({ id: chatId, 'messages.id': messageId }, { $set: { 'messages.$.content': content } });
 
-    if (chatIndex !== -1) {
-        if (messageIndex === -1) {
-            addMessageToChat(chats, chatId, messageId, 'bot', content, isImage, socket);
-        }
-        messageIndex = chats[chatIndex].messages.findIndex((msg) => msg.id === messageId);
+    const updatedChats = await mongoClient.db(mongoDbName).collection('chats').find().toArray();
 
-        if (messageIndex !== -1) {
-            chats[chatIndex].messages[messageIndex].content = content;
-            socket.emit('chats updated', chats, chatIndex);
-        }
-    }
+    const chatIndex = updatedChats.findIndex((chat) => chat.id === chatId);
+    socket.emit('chats updated', updatedChats, chatIndex);
 }
 
 io.on('connection', (socket) => {
     console.log('New client connected');
 
-    socket.emit('chats updated', chats);
+    (async () => {
+        const chats = await mongoClient.db(mongoDbName).collection('chats').find().toArray();
+        socket.emit('chats updated', chats, -1);
+    })();
 
-    socket.on('create chat', () => {
+    socket.on('create chat', async () => {
+        const chats = await mongoClient.db(mongoDbName).collection('chats').find().toArray();
         const newChat = {
             id: uuidv4(),
             title: `Chat ${chats.length + 1}`,
             messages: [],
         };
-        chats.push(newChat);
-        socket.emit('chats updated', chats, chats.length - 1);
+        await mongoClient.db(mongoDbName).collection('chats').insertOne(newChat);
+        const updatedChats = await mongoClient.db(mongoDbName).collection('chats').find().toArray();
+        const chatIndex = updatedChats.findIndex((chat) => chat.id === newChat.id);
+        socket.emit('chats updated', updatedChats, chatIndex);
     });
 
-    socket.on('delete chat', (chatId) => {
-        if (chats.length <= 1) {
-            socket.emit('error', { error: 'Cannot delete the last chat' });
-            return;
+    socket.on('delete chat', async (chatId) => {
+        await mongoClient.db(mongoDbName).collection('chats').deleteOne({ id: chatId });
+        const updatedChats = await mongoClient.db(mongoDbName).collection('chats').find().toArray();
+
+        const numChats = updatedChats.length;
+
+        if (numChats === 0){
+            socket.emit('chats updated', updatedChats, -1);
+        } else {
+            socket.emit('chats updated', updatedChats);
         }
 
-        const remainingChats = chats.filter((chat) => chat.id !== chatId);
-        chats.length = 0;
-        chats.push(...remainingChats);
-
-        socket.emit('chats updated', chats);
         socket.emit('info', { info: 'Chat deleted'});
     });
 
-    socket.on('rename chat', ({ chatId, newTitle }) => {
-        const chat = chats.find((chat) => chat.id === chatId);
-        if (chat) {
-            chat.title = newTitle;
-            // socket.emit('chat renamed', { chatId, newTitle });
-            socket.emit('chats updated', chats, chats.findIndex((chat) => chat.id === chatId));
-            socket.emit('info', { info: 'Chat renamed'});
-        } else {
-            socket.emit('error', { error: 'Chat not found' });
-        }
+    socket.on('rename chat', async ({ chatId, newTitle }) => {
+        await mongoClient.db(mongoDbName).collection('chats').updateOne({ id: chatId }, { $set: { title: newTitle } });
+        const updatedChats = await mongoClient.db(mongoDbName).collection('chats').find().toArray();
+
+        const chatIndex = updatedChats.findIndex((chat) => chat.id === chatId);
+
+        socket.emit('chats updated', updatedChats, chatIndex);
+        socket.emit('info', { info: 'Chat renamed'});
     });
 
     socket.on('chat message', async (data) => {
@@ -146,10 +169,12 @@ io.on('connection', (socket) => {
             return;
         }
         let userMessageId = uuidv4();
-        addMessageToChat(chats, chatId,userMessageId, 'user', messageInput, false, socket);
+        await addMessageToChat(chatId, userMessageId, 'user', messageInput, false, socket);
 
         let botMessageId = uuidv4();
         let currentBotMessage = '';
+
+        await addMessageToChat(chatId, botMessageId, 'bot', '...', false, socket);
 
         try {
             fetchStreamedChatContent(
@@ -176,12 +201,12 @@ io.on('connection', (socket) => {
                 (content) => {
                     // onResponse
                     currentBotMessage += content;
-                    updateBotMessageInChat(chats, chatId, botMessageId, currentBotMessage, false, socket);
+                    updateBotMessageInChat(chatId, botMessageId, currentBotMessage, false, socket);
 
                 },
                 () => {
                     // onFinish
-                    updateBotMessageInChat(chats, chatId, botMessageId, currentBotMessage, false, socket);
+                    updateBotMessageInChat(chatId, botMessageId, currentBotMessage, false, socket);
                     socket.emit('bot finished')
                 },
                 (error) => {
@@ -206,7 +231,7 @@ io.on('connection', (socket) => {
             }
             let userMessageId = uuidv4();
 
-            addMessageToChat(chats, chatId, userMessageId, 'user', prompt,false, socket);
+            await addMessageToChat(chatId, userMessageId, 'user', prompt,false, socket);
 
             try {
                 const response = await axios.post(
@@ -233,7 +258,7 @@ io.on('connection', (socket) => {
                 // Download and save the image locally
                 axios
                     .get(imageUrl, {responseType: 'arraybuffer'})
-                    .then((response) => {
+                    .then(async (response) => {
                         const localImagePath = path.join(imagesFolderPath, imageFileName);
                         fs.writeFileSync(localImagePath, Buffer.from(response.data, 'binary'));
 
@@ -241,7 +266,7 @@ io.on('connection', (socket) => {
 
                         let botMessageId = uuidv4();
 
-                        addMessageToChat(chats, chatId, botMessageId, 'bot', localImageUrl, true, socket);
+                        await addMessageToChat(chatId, botMessageId, 'bot', localImageUrl, true, socket);
 
                         socket.emit('bot finished')
                     })
