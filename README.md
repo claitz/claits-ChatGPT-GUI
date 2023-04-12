@@ -9,10 +9,10 @@ This was created to provide an alternative to the amazing [PatrikZeros ChatGPT A
 - Model selection
 - Multiple chat sessions
 - Chat history stored to MongoDB
-- Image generation with persistent local storage
+- Image generation with persistent local storage to MongoDB
+- Double click to copy code blocks
 - `.env` configuration
-- Websocket server
-- Streamed bot responses
+- Websocket server & streamed bot responses
 
 Text request with response streaming:
 

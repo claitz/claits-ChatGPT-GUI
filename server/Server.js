@@ -2,11 +2,9 @@ import {Server as socketIO} from 'socket.io';
 import {fetchStreamedChatContent} from 'streamed-chatgpt-api';
 import axios from 'axios';
 import express from 'express';
-import fs from 'fs';
-import { fileURLToPath } from 'url';
-import path from 'path';
 import { v4 as uuidv4 } from 'uuid';
-import { MongoClient } from 'mongodb';
+import { MongoClient, ObjectId } from 'mongodb';
+
 import dotenv from 'dotenv';
 
 dotenv.config();
@@ -36,19 +34,34 @@ const mongoClient = new MongoClient(mongoDbUrl, { useNewUrlParser: true, useUnif
     }
 })();
 
-// Image folder configuration
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
-const imagesFolderPath = path.join(__dirname, 'images');
-
-// Create images folder if it doesn't exist
-if (!fs.existsSync(imagesFolderPath)) {
-    fs.mkdirSync(imagesFolderPath);
-}
-
-// Middleware to serve static files
+// Middleware for images
 const app = express();
-app.use('/images', express.static(imagesFolderPath)); // Serve images folder
+
+
+// Get images from MongoDB
+app.get('/images/:id', async (req, res) => {
+    const imageId = req.params.id;
+
+    try {
+        const image = await mongoClient
+            .db(mongoDbName)
+            .collection('images')
+            .findOne({ _id: new ObjectId(imageId) });
+
+        if (!image) {
+            res.status(404).json({ error: 'Image not found' });
+            return;
+        }
+
+        const contentType = 'image/jpeg'; // Adjust this based on the actual image type
+        res.setHeader('Content-Type', contentType);
+        res.send(image.data.buffer);
+    } catch (error) {
+        console.error('Failed to fetch the image', error);
+        res.status(500).json({ error: 'Failed to fetch the image' });
+    }
+});
+
 
 // Create express server
 const server = app.listen(PORT, () => console.log(`Server listening on port ${PORT}`));
@@ -171,10 +184,10 @@ io.on('connection', (socket) => {
             console.log('No API key provided.')
             return;
         }
-        let userMessageId = uuidv4();
+        const userMessageId = uuidv4();
         await addMessageToChat(chatId, userMessageId, 'user', messageInput, false, socket);
 
-        let botMessageId = uuidv4();
+        const botMessageId = uuidv4();
         let currentBotMessage = '';
 
         await addMessageToChat(chatId, botMessageId, 'bot', '...', false, socket);
@@ -225,68 +238,81 @@ io.on('connection', (socket) => {
     });
 
     socket.on('image request', async (data) => {
-            const {chatId, apiKey, message, imageCommand } = data;
+        const { chatId, apiKey, message, imageCommand } = data;
 
-            if (!apiKey) {
-                socket.emit('error', {error: 'No API key provided.'});
-                console.log('No API key provided.')
-                return;
-            }
-            let userMessageId = uuidv4();
-
-            await addMessageToChat(chatId, userMessageId, 'user', message,false, socket);
-
-            const prompt = message.replace(imageCommand, '').trim();
-
-            try {
-                const response = await axios.post(
-                    'https://api.openai.com/v1/images/generations',
-                    {
-                        prompt,
-                        n: 1,
-                        size: '1024x1024',
-                    },
-                    {
-                        headers: {
-                            'Authorization': `Bearer ${apiKey}`,
-                            'Content-Type': 'application/json',
-                        },
-                    }
-                );
-
-                const imageUrl = response.data.data[0].url || 'https://i.imgur.com/xFhXMD7.jpeg'; // Test image
-
-                let sanitizedPrompt = sanitizeFilename(prompt);
-                sanitizedPrompt = sanitizedPrompt.substring(0, maxPromptLength);
-
-                const timestamp = Date.now();
-                const imageFileName = `${timestamp}-${sanitizedPrompt}.jpeg`;
-
-                // Download and save the image locally
-                axios
-                    .get(imageUrl, {responseType: 'arraybuffer'})
-                    .then(async (response) => {
-                        const localImagePath = path.join(imagesFolderPath, imageFileName);
-                        fs.writeFileSync(localImagePath, Buffer.from(response.data, 'binary'));
-
-                        const localImageUrl = `${backendUrl}/images/${imageFileName}`;
-
-                        let botMessageId = uuidv4();
-
-                        await addMessageToChat(chatId, botMessageId, 'bot', localImageUrl, true, socket);
-
-                        socket.emit('bot finished')
-                    })
-                    .catch((error) => {
-                        console.log(error);
-                        socket.emit('error', {error: error.message});
-                    });
-            } catch (error) {
-                console.log(error)
-                socket.emit('error', {error: error.message});
-            }
+        if (!apiKey) {
+            socket.emit('error', { error: 'No API key provided.' });
+            console.log('No API key provided.');
+            return;
         }
-    );
+        const userMessageId = uuidv4();
+
+        await addMessageToChat(chatId, userMessageId, 'user', message, false, socket);
+
+        const prompt = message.replace(imageCommand, '').trim();
+
+        try {
+            const response = await axios.post(
+                'https://api.openai.com/v1/images/generations',
+                {
+                    prompt,
+                    n: 1,
+                    size: '1024x1024',
+                },
+                {
+                    headers: {
+                        'Authorization': `Bearer ${apiKey}`,
+                        'Content-Type': 'application/json',
+                    },
+                }
+            );
+
+            const imageUrl = response.data.data[0].url || 'https://i.imgur.com/xFhXMD7.jpeg'; // Test image
+
+            let sanitizedPrompt = sanitizeFilename(prompt);
+            sanitizedPrompt = sanitizedPrompt.substring(0, maxPromptLength);
+
+            const timestamp = Date.now();
+            const imageFileName = `${timestamp}-${sanitizedPrompt}.jpeg`;
+
+            // Download and save the image in MongoDB
+            axios
+                .get(imageUrl, { responseType: 'arraybuffer' })
+                .then(async (response) => {
+                    const imageBuffer = Buffer.from(response.data, 'binary');
+
+                    try {
+                        const image = {
+                            filename: imageFileName,
+                            data: imageBuffer,
+                        };
+
+                        const result = await mongoClient
+                            .db(mongoDbName)
+                            .collection('images')
+                            .insertOne(image);
+
+                        const imageId = result.insertedId;
+                        const localImageUrl = `${backendUrl}/images/${imageId}`;
+
+                        const botMessageId = uuidv4();
+                        await addMessageToChat(chatId, botMessageId, 'bot', localImageUrl, true, socket);
+                        socket.emit('bot finished');
+                    } catch (error) {
+                        console.error('Failed to store the image', error);
+                        socket.emit('error', { error: 'Failed to store the image' });
+                    }
+                })
+                .catch((error) => {
+                    console.log(error);
+                    socket.emit('error', { error: error.message });
+                });
+        } catch (error) {
+            console.log(error);
+            socket.emit('error', { error: error.message });
+        }
+    });
+
 
     socket.on('disconnect', () => {
         console.log('Client disconnected');

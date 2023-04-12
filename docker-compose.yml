@@ -7,8 +7,6 @@ services:
     ports:
       - "3001:3001"
       - "5000:5000"
-    volumes:
-      - chatgpt-gui-persistence:/app/images
     environment:
       - WATCHPACK_POLLING=true
       - REACT_APP_WS_PORT=3001
