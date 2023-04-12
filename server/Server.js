@@ -4,7 +4,6 @@ import axios from 'axios';
 import express from 'express';
 import { v4 as uuidv4 } from 'uuid';
 import { MongoClient, ObjectId } from 'mongodb';
-
 import dotenv from 'dotenv';
 
 dotenv.config();
@@ -37,7 +36,6 @@ const mongoClient = new MongoClient(mongoDbUrl, { useNewUrlParser: true, useUnif
 // Middleware for images
 const app = express();
 
-
 // Get images from MongoDB
 app.get('/images/:id', async (req, res) => {
     const imageId = req.params.id;
@@ -62,7 +60,6 @@ app.get('/images/:id', async (req, res) => {
     }
 });
 
-
 // Create express server
 const server = app.listen(PORT, () => console.log(`Server listening on port ${PORT}`));
 
@@ -80,13 +77,14 @@ function sanitizeFilename(prompt) {
 }
 
 // Adding messages to the chat
-const addMessageToChat = async (chatId, messageId, role, content, isImage, socket) => {
+const addMessageToChat = async (chatId, messageId, role, content, isImage, prompt = "", socket) => {
     const message = {
         id: messageId,
         role: role,
         content: content,
         timestamp: Date.now(),
         isImage: isImage,
+        prompt: prompt,
     };
 
     await mongoClient
@@ -118,7 +116,6 @@ io.on('connection', (socket) => {
     })();
 
     socket.on('create chat', async () => {
-        const chats = await mongoClient.db(mongoDbName).collection('chats').find().toArray();
         const newChat = {
             id: uuidv4(),
             title: `New Chat`,
@@ -185,12 +182,12 @@ io.on('connection', (socket) => {
             return;
         }
         const userMessageId = uuidv4();
-        await addMessageToChat(chatId, userMessageId, 'user', messageInput, false, socket);
+        await addMessageToChat(chatId, userMessageId, 'user', messageInput, false, "",socket);
 
         const botMessageId = uuidv4();
         let currentBotMessage = '';
 
-        await addMessageToChat(chatId, botMessageId, 'bot', '...', false, socket);
+        await addMessageToChat(chatId, botMessageId, 'bot', '...', false, messageInput, socket);
 
         try {
             fetchStreamedChatContent(
@@ -247,7 +244,7 @@ io.on('connection', (socket) => {
         }
         const userMessageId = uuidv4();
 
-        await addMessageToChat(chatId, userMessageId, 'user', message, false, socket);
+        await addMessageToChat(chatId, userMessageId, 'user', message, false,"", socket);
 
         const prompt = message.replace(imageCommand, '').trim();
 
@@ -273,7 +270,6 @@ io.on('connection', (socket) => {
             sanitizedPrompt = sanitizedPrompt.substring(0, maxPromptLength);
 
             const timestamp = Date.now();
-            const imageFileName = `${timestamp}-${sanitizedPrompt}.jpeg`;
 
             // Download and save the image in MongoDB
             axios
@@ -283,8 +279,10 @@ io.on('connection', (socket) => {
 
                     try {
                         const image = {
-                            filename: imageFileName,
+                            timestamp: timestamp,
                             data: imageBuffer,
+                            prompt: prompt,
+                            sanitizedPrompt: sanitizedPrompt,
                         };
 
                         const result = await mongoClient
@@ -296,7 +294,7 @@ io.on('connection', (socket) => {
                         const localImageUrl = `${backendUrl}/images/${imageId}`;
 
                         const botMessageId = uuidv4();
-                        await addMessageToChat(chatId, botMessageId, 'bot', localImageUrl, true, socket);
+                        await addMessageToChat(chatId, botMessageId, 'bot', localImageUrl, true, prompt, socket);
                         socket.emit('bot finished');
                     } catch (error) {
                         console.error('Failed to store the image', error);

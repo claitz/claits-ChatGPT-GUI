@@ -186,6 +186,14 @@
   margin-bottom: 1rem;
 }
 
+.message .image-prompt {
+  /*font-size: 0.8rem;*/
+  font-style: italic;
+  /*color: #777;*/
+  padding-bottom: 1rem;
+}
+
+
 .chat-input {
   display: flex;
   justify-content: space-between;

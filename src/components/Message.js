@@ -2,10 +2,12 @@ import React, { useState, useCallback } from 'react';
 import ReactMarkdown from 'react-markdown';
 import Lightbox from "yet-another-react-lightbox";
 import Download from "yet-another-react-lightbox/plugins/download";
+import Captions from "yet-another-react-lightbox/plugins/captions";
 import "yet-another-react-lightbox/styles.css";
+import "yet-another-react-lightbox/plugins/captions.css";
 
 const Message = ({ message, toast }) => {
-    const { content, role, timestamp, isImage } = message;
+    const { content, role, timestamp, isImage, prompt } = message;
     const isUser = role === 'user';
 
     const [isLightboxOpen, setIsLightboxOpen] = useState(false);
@@ -48,12 +50,13 @@ const Message = ({ message, toast }) => {
                 <>
                     <img
                         src={content}
-                        alt="Generated content"
+                        alt={prompt}
                         className="generated-image"
                         onClick={() =>{
                             setIsLightboxOpen(true)}
                         }
                     />
+                    <div className="image-prompt">{prompt}</div>
                     {isLightboxOpen && (
                         <Lightbox
                             open={isLightboxOpen}
@@ -61,11 +64,13 @@ const Message = ({ message, toast }) => {
                             slides={[
                                 {
                                 src: content,
-                                alt: "Content generated at " + formatDate(timestamp),
-                                downloadFilename: "generated-content-" + formatDate(timestamp),
+                                alt: prompt,
+                                description: prompt,
+                                downloadFilename: formatDate(timestamp)+"-"+prompt +".jpeg",
                                 },
                             ]}
-                            plugins={[Download]}
+                            plugins={[Download, Captions]}
+                            captions={{descriptionTextAlign: "center"}}
                         />
                     )}
                 </>
