@@ -16,6 +16,8 @@ const Sidebar = ({ chats = [], activeChat, onChatSelect, onCreateChat, onDeleteC
         }
     };
 
+    const sortedChats = chats && chats.length > 0 ? chats.sort((a, b) => b.creationDate - a.creationDate) : [];
+
     return (
         <div className="sidebar">
             <div className="sidebar-content">
@@ -26,7 +28,7 @@ const Sidebar = ({ chats = [], activeChat, onChatSelect, onCreateChat, onDeleteC
                 </div>
                 {chats && chats.length > 0 ? (
                     <ul className="sidebar-chat-list">
-                        {chats.map((chat) => (
+                        {sortedChats.map((chat) => (
                                 <li
                                     key={chat.id}
                                     className={activeChat === chat ? 'selected' : ''}

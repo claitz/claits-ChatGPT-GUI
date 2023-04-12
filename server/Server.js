@@ -108,7 +108,8 @@ io.on('connection', (socket) => {
         const chats = await mongoClient.db(mongoDbName).collection('chats').find().toArray();
         const newChat = {
             id: uuidv4(),
-            title: `Chat ${chats.length + 1}`,
+            title: `New Chat`,
+            creationDate: Date.now(),
             messages: [],
         };
         await mongoClient.db(mongoDbName).collection('chats').insertOne(newChat);
