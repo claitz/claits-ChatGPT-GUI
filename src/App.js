@@ -200,7 +200,7 @@ const App = () => {
           {activeChat ? (
               <>
                 <div className="chatbox-header">{activeChat.title}</div>
-                <MessageList messages={activeChat.messages} toast={toast}/>
+                <MessageList activeChat={activeChat} toast={toast} socket={socket}/>
                 <ChatInput onSendMessage={onSendMessage} isLoading={isLoading} />
                 {showSettings && (
                     <Modal isOpen={showSettings} onClose={toggleSettingsModal}>

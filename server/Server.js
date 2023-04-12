@@ -29,7 +29,7 @@ const mongoClient = new MongoClient(mongoDbUrl, { useNewUrlParser: true, useUnif
         await mongoClient.connect();
         console.log('Connected to MongoDB');
     } catch (error) {
-        console.error('Failed to connect to MongoDB', error);
+        handleError(error);
     }
 })();
 
@@ -76,15 +76,205 @@ function sanitizeFilename(prompt) {
     return prompt.replace(/[^a-z0-9]/gi, '_').toLowerCase();
 }
 
-// Adding messages to the chat
-const addMessageToChat = async (chatId, messageId, role, content, isImage, prompt = "", socket) => {
+// Update chats
+
+const handleError = (error) => {
+    console.error(error);
+    io.emit('error', { error: error.message });
+}
+const updateChats = async () => {
+    const chats = await mongoClient.db(mongoDbName).collection('chats').find().toArray();
+    io.emit('chats updated', chats, -1);
+}
+
+// Create a new chat
+const createChat = async () => {
+    const newChat = {
+        id: uuidv4(),
+        title: `New Chat`,
+        creationDate: Date.now(),
+        messages: [],
+    };
+    await mongoClient.db(mongoDbName).collection('chats').insertOne(newChat);
+    const updatedChats = await mongoClient.db(mongoDbName).collection('chats').find().toArray();
+    const chatIndex = updatedChats.findIndex((chat) => chat.id === newChat.id);
+    io.emit('chats updated', updatedChats, chatIndex);
+}
+
+// Rename a chat
+const renameChat = async (chatId, newTitle) => {
+    await mongoClient.db(mongoDbName).collection('chats').updateOne({ id: chatId }, { $set: { title: newTitle } });
+    const updatedChats = await mongoClient.db(mongoDbName).collection('chats').find().toArray();
+
+    const chatIndex = updatedChats.findIndex((chat) => chat.id === chatId);
+
+    io.emit('chats updated', updatedChats, chatIndex);
+    io.emit('info', { info: 'Chat renamed'});
+}
+
+// Handle incoming chat message
+const handleChatMessage = async (data) => {
+    const {
+        chatId,
+        apiKey,
+        messageInput,
+        apiUrl,
+        model,
+        temperature,
+        topP,
+        n,
+        stop,
+        maxTokens,
+        presencePenalty,
+        frequencyPenalty,
+        logitBias,
+        user,
+        retryCount,
+        fetchTimeout,
+        readTimeout,
+        retryInterval,
+        totalTime,
+    } = data;
+
+    if (!apiKey) {
+        handleError({error: 'No API key provided.'});
+        return;
+    }
+    const userMessageId = uuidv4();
+    await addMessageToChat(chatId, userMessageId, 'user', messageInput,  messageInput, "");
+
+    const botMessageId = uuidv4();
+    let currentBotMessage = '';
+
+    await addMessageToChat(chatId, botMessageId, 'bot', '...', messageInput, "");
+
+    try {
+        fetchStreamedChatContent(
+            {
+                apiKey,
+                messageInput,
+                apiUrl,
+                model,
+                temperature,
+                topP,
+                n,
+                stop,
+                maxTokens,
+                presencePenalty,
+                frequencyPenalty,
+                logitBias,
+                user,
+                retryCount,
+                fetchTimeout,
+                readTimeout,
+                retryInterval,
+                totalTime,
+            },
+            (content) => {
+                // onResponse
+                currentBotMessage += content;
+                updateBotMessageInChat(chatId, botMessageId, currentBotMessage);
+
+            },
+            () => {
+                // onFinish
+                updateBotMessageInChat(chatId, botMessageId, currentBotMessage);
+                io.emit('bot finished')
+            },
+            (error) => {
+                // onError
+                handleError(error);
+            }
+        );
+    } catch (error) {
+        handleError(error);
+    }
+}
+
+// Handle image generation request
+
+const handleImageRequest = async (data) => {
+    const { chatId, apiKey, message, imageCommand } = data;
+
+    if (!apiKey) {
+        handleError({ error: 'No API key provided.' });
+        return;
+    }
+    const userMessageId = uuidv4();
+
+    await addMessageToChat(chatId, userMessageId, 'user', message,message,"");
+
+    const prompt = message.replace(imageCommand, '').trim();
+
+    try {
+        const response = await axios.post(
+            'https://api.openai.com/v1/images/generations',
+            {
+                prompt,
+                n: 1,
+                size: '1024x1024',
+            },
+            {
+                headers: {
+                    'Authorization': `Bearer ${apiKey}`,
+                    'Content-Type': 'application/json',
+                },
+            }
+        );
+
+        const imageUrl = response.data.data[0].url || 'https://i.imgur.com/xFhXMD7.jpeg'; // Test image
+
+        let sanitizedPrompt = sanitizeFilename(prompt);
+        sanitizedPrompt = sanitizedPrompt.substring(0, maxPromptLength);
+
+        const timestamp = Date.now();
+
+        // Download and save the image in MongoDB
+        axios
+            .get(imageUrl, { responseType: 'arraybuffer' })
+            .then(async (response) => {
+                const imageBuffer = Buffer.from(response.data, 'binary');
+
+                try {
+                    const image = {
+                        timestamp: timestamp,
+                        data: imageBuffer,
+                        prompt: prompt,
+                        sanitizedPrompt: sanitizedPrompt,
+                    };
+
+                    const result = await mongoClient
+                        .db(mongoDbName)
+                        .collection('images')
+                        .insertOne(image);
+
+                    const imageId = result.insertedId;
+                    const localImageUrl = `${backendUrl}/images/${imageId}`;
+
+                    const botMessageId = uuidv4();
+                    await addMessageToChat(chatId, botMessageId, 'bot', localImageUrl, prompt, imageId);
+                    io.emit('bot finished');
+                } catch (error) {
+                    handleError({ error: 'Error saving image' });
+                }
+            })
+            .catch((error) => {
+                handleError(error);
+            });
+    } catch (error) {
+        handleError(error);
+    }
+}
+
+// Add a message to the chat
+const addMessageToChat = async (chatId, messageId, role, content, prompt = "", imageId = "") => {
     const message = {
         id: messageId,
         role: role,
         content: content,
         timestamp: Date.now(),
-        isImage: isImage,
         prompt: prompt,
+        imageId: imageId,
     };
 
     await mongoClient
@@ -94,225 +284,139 @@ const addMessageToChat = async (chatId, messageId, role, content, isImage, promp
 
     const updatedChats = await mongoClient.db(mongoDbName).collection('chats').find().toArray();
     const chatIndex = updatedChats.findIndex((chat) => chat.id === chatId);
-    socket.emit('chats updated', updatedChats, chatIndex);
+    io.emit('chats updated', updatedChats, chatIndex);
 };
 
-// Updating existing messages
-const updateBotMessageInChat = async (chatId, messageId, content, isImage, socket) => {
+// Update an existing message
+const updateBotMessageInChat = async (chatId, messageId, content) => {
     await mongoClient.db(mongoDbName).collection('chats').updateOne({ id: chatId, 'messages.id': messageId }, { $set: { 'messages.$.content': content } });
 
     const updatedChats = await mongoClient.db(mongoDbName).collection('chats').find().toArray();
 
     const chatIndex = updatedChats.findIndex((chat) => chat.id === chatId);
-    socket.emit('chats updated', updatedChats, chatIndex);
+    io.emit('chats updated', updatedChats, chatIndex);
+}
+
+// Delete a chat
+const deleteChat = async (chatId) => {
+    // Fetch the chat to be deleted
+    const chat = await mongoClient.db(mongoDbName).collection('chats').findOne({ id: chatId });
+
+    // Delete all images in the chat
+    for (let i = 0; i < chat.messages.length; i++) {
+        if (chat.messages[i].imageId !== '') {
+            await deleteImage(chat.messages[i].imageId);
+        }
+    }
+
+    // Delete the chat
+    await mongoClient.db(mongoDbName).collection('chats').deleteOne({ id: chatId });
+    const updatedChats = await mongoClient.db(mongoDbName).collection('chats').find().toArray();
+
+    const numChats = updatedChats.length;
+
+    if (numChats === 0) {
+        io.emit('chats updated', updatedChats, -1);
+    } else {
+        io.emit('chats updated', updatedChats);
+    }
+
+    io.emit('info', { info: 'Chat and images deleted' });
+}
+
+// Delete a message from a chat
+const deleteMessageFromChat = async(chatId, messageId) => {
+    const chat = await mongoClient.db(mongoDbName).collection('chats').findOne({ id: chatId });
+    const message = chat.messages.find((message) => message.id === messageId);
+
+    if (message === undefined) return;
+
+    let isImage = false;
+
+    if (message.imageId !== '') {
+        await deleteImage(message.imageId);
+        isImage = true;
+    }
+
+    await mongoClient
+        .db(mongoDbName)
+        .collection('chats')
+        .updateOne({ id: chatId }, { $pull: { messages: { id: messageId } } });
+
+    const updatedChats = await mongoClient.db(mongoDbName).collection('chats').find().toArray();
+    const chatIndex = updatedChats.findIndex((chat) => chat.id === chatId);
+
+    const messageInfo = isImage ? 'Message and image deleted' : 'Message deleted';
+
+    io.emit('chats updated', updatedChats, chatIndex);
+    io.emit('info', {info: messageInfo});
+}
+
+// Delete an image
+const deleteImage = async (imageId) => {
+    await mongoClient
+        .db(mongoDbName)
+        .collection('images')
+        .deleteOne({ _id:  imageId } );
 }
 
 io.on('connection', (socket) => {
-    console.log('New client connected');
+
+    // console.log('New client connected');
 
     (async () => {
-        const chats = await mongoClient.db(mongoDbName).collection('chats').find().toArray();
-        socket.emit('chats updated', chats, -1);
+        await updateChats();
     })();
 
     socket.on('create chat', async () => {
-        const newChat = {
-            id: uuidv4(),
-            title: `New Chat`,
-            creationDate: Date.now(),
-            messages: [],
-        };
-        await mongoClient.db(mongoDbName).collection('chats').insertOne(newChat);
-        const updatedChats = await mongoClient.db(mongoDbName).collection('chats').find().toArray();
-        const chatIndex = updatedChats.findIndex((chat) => chat.id === newChat.id);
-        socket.emit('chats updated', updatedChats, chatIndex);
+        try {
+            await createChat();
+        } catch (error) {
+            handleError(error);
+        }
     });
 
     socket.on('delete chat', async (chatId) => {
-        await mongoClient.db(mongoDbName).collection('chats').deleteOne({ id: chatId });
-        const updatedChats = await mongoClient.db(mongoDbName).collection('chats').find().toArray();
-
-        const numChats = updatedChats.length;
-
-        if (numChats === 0){
-            socket.emit('chats updated', updatedChats, -1);
-        } else {
-            socket.emit('chats updated', updatedChats);
+        try {
+            await deleteChat(chatId);
+        } catch (error) {
+            handleError(error);
         }
+    });
 
-        socket.emit('info', { info: 'Chat deleted'});
+    socket.on('delete message', async ({ messageId, chatId }) => {
+        try {
+            await deleteMessageFromChat(chatId, messageId);
+        } catch (error) {
+            handleError(error);
+        }
     });
 
     socket.on('rename chat', async ({ chatId, newTitle }) => {
-        await mongoClient.db(mongoDbName).collection('chats').updateOne({ id: chatId }, { $set: { title: newTitle } });
-        const updatedChats = await mongoClient.db(mongoDbName).collection('chats').find().toArray();
-
-        const chatIndex = updatedChats.findIndex((chat) => chat.id === chatId);
-
-        socket.emit('chats updated', updatedChats, chatIndex);
-        socket.emit('info', { info: 'Chat renamed'});
+        try {
+            await renameChat(chatId, newTitle);
+        } catch (error) {
+            handleError(error);
+        }
     });
 
     socket.on('chat message', async (data) => {
-        const {
-            chatId,
-            apiKey,
-            messageInput,
-            apiUrl,
-            model,
-            temperature,
-            topP,
-            n,
-            stop,
-            maxTokens,
-            presencePenalty,
-            frequencyPenalty,
-            logitBias,
-            user,
-            retryCount,
-            fetchTimeout,
-            readTimeout,
-            retryInterval,
-            totalTime,
-        } = data;
-
-        if (!apiKey) {
-            socket.emit('error', {error: 'No API key provided.'});
-            console.log('No API key provided.')
-            return;
-        }
-        const userMessageId = uuidv4();
-        await addMessageToChat(chatId, userMessageId, 'user', messageInput, false, "",socket);
-
-        const botMessageId = uuidv4();
-        let currentBotMessage = '';
-
-        await addMessageToChat(chatId, botMessageId, 'bot', '...', false, messageInput, socket);
-
         try {
-            fetchStreamedChatContent(
-                {
-                    apiKey,
-                    messageInput,
-                    apiUrl,
-                    model,
-                    temperature,
-                    topP,
-                    n,
-                    stop,
-                    maxTokens,
-                    presencePenalty,
-                    frequencyPenalty,
-                    logitBias,
-                    user,
-                    retryCount,
-                    fetchTimeout,
-                    readTimeout,
-                    retryInterval,
-                    totalTime,
-                },
-                (content) => {
-                    // onResponse
-                    currentBotMessage += content;
-                    updateBotMessageInChat(chatId, botMessageId, currentBotMessage, false, socket);
-
-                },
-                () => {
-                    // onFinish
-                    updateBotMessageInChat(chatId, botMessageId, currentBotMessage, false, socket);
-                    socket.emit('bot finished')
-                },
-                (error) => {
-                    // onError
-                    socket.emit('error', {error: error.message});
-                    console.log(error)
-                }
-            );
+            await handleChatMessage(data);
         } catch (error) {
-            socket.emit('error', {error: error.message});
-            console.log(error)
+            handleError(error);
         }
     });
 
     socket.on('image request', async (data) => {
-        const { chatId, apiKey, message, imageCommand } = data;
-
-        if (!apiKey) {
-            socket.emit('error', { error: 'No API key provided.' });
-            console.log('No API key provided.');
-            return;
-        }
-        const userMessageId = uuidv4();
-
-        await addMessageToChat(chatId, userMessageId, 'user', message, false,"", socket);
-
-        const prompt = message.replace(imageCommand, '').trim();
-
         try {
-            const response = await axios.post(
-                'https://api.openai.com/v1/images/generations',
-                {
-                    prompt,
-                    n: 1,
-                    size: '1024x1024',
-                },
-                {
-                    headers: {
-                        'Authorization': `Bearer ${apiKey}`,
-                        'Content-Type': 'application/json',
-                    },
-                }
-            );
-
-            const imageUrl = response.data.data[0].url || 'https://i.imgur.com/xFhXMD7.jpeg'; // Test image
-
-            let sanitizedPrompt = sanitizeFilename(prompt);
-            sanitizedPrompt = sanitizedPrompt.substring(0, maxPromptLength);
-
-            const timestamp = Date.now();
-
-            // Download and save the image in MongoDB
-            axios
-                .get(imageUrl, { responseType: 'arraybuffer' })
-                .then(async (response) => {
-                    const imageBuffer = Buffer.from(response.data, 'binary');
-
-                    try {
-                        const image = {
-                            timestamp: timestamp,
-                            data: imageBuffer,
-                            prompt: prompt,
-                            sanitizedPrompt: sanitizedPrompt,
-                        };
-
-                        const result = await mongoClient
-                            .db(mongoDbName)
-                            .collection('images')
-                            .insertOne(image);
-
-                        const imageId = result.insertedId;
-                        const localImageUrl = `${backendUrl}/images/${imageId}`;
-
-                        const botMessageId = uuidv4();
-                        await addMessageToChat(chatId, botMessageId, 'bot', localImageUrl, true, prompt, socket);
-                        socket.emit('bot finished');
-                    } catch (error) {
-                        console.error('Failed to store the image', error);
-                        socket.emit('error', { error: 'Failed to store the image' });
-                    }
-                })
-                .catch((error) => {
-                    console.log(error);
-                    socket.emit('error', { error: error.message });
-                });
+            await handleImageRequest(data);
         } catch (error) {
-            console.log(error);
-            socket.emit('error', { error: error.message });
+            handleError(error);
         }
     });
 
-
     socket.on('disconnect', () => {
-        console.log('Client disconnected');
+        // console.log('Client disconnected');
     });
 });

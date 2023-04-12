@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react';
+import React, {useCallback, useState} from 'react';
 import ReactMarkdown from 'react-markdown';
 import Lightbox from "yet-another-react-lightbox";
 import Download from "yet-another-react-lightbox/plugins/download";
@@ -6,9 +6,11 @@ import Captions from "yet-another-react-lightbox/plugins/captions";
 import "yet-another-react-lightbox/styles.css";
 import "yet-another-react-lightbox/plugins/captions.css";
 
-const Message = ({ message, toast }) => {
-    const { content, role, timestamp, isImage, prompt } = message;
+const Message = ({ activeChat, message, toast, socket }) => {
+    const { content, role, timestamp, prompt, imageId } = message;
     const isUser = role === 'user';
+
+    const backendUrl = process.env.REACT_APP_BACKEND_HOST || 'http://localhost:3001';
 
     const [isLightboxOpen, setIsLightboxOpen] = useState(false);
 
@@ -22,6 +24,10 @@ const Message = ({ message, toast }) => {
             hour12: true,
         });
     }
+
+    // const handleDeleteMessage = () => {
+    //     socket.emit('delete message', { messageId: message.id, chatId: activeChat.id });
+    // };
 
     const handleDoubleClick = useCallback(
         (e) => {
@@ -41,15 +47,22 @@ const Message = ({ message, toast }) => {
         [toast]
     );
 
+    const getImgUrl = (imageId) => {
+        return backendUrl + "/images/" + imageId;
+    }
+
     return (
         <div
             className={`message ${isUser ? 'user' : 'bot'}`}
             onDoubleClick={handleDoubleClick}
         >
-            {isImage ? (
+            {/*<button className="delete-btn" onClick={handleDeleteMessage}>*/}
+            {/*    &times;*/}
+            {/*</button>*/}
+            {imageId !== "" ? (
                 <>
                     <img
-                        src={content}
+                        src={getImgUrl(imageId)}
                         alt={prompt}
                         className="generated-image"
                         onClick={() =>{
