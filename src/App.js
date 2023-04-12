@@ -22,7 +22,7 @@ const App = () => {
   const [showSettings, setShowSettings] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
 
-  const [activeChatId, setActiveChatId] = useState(null);
+  const [activeChatId, setActiveChatId] = useState(localStorage.getItem('activeChatId') || null);
   const activeChat = useMemo(() => chats?.find((chat) => chat.id === activeChatId), [chats, activeChatId]);
 
   useEffect(() => {
@@ -32,6 +32,10 @@ const App = () => {
   useEffect(() => {
     localStorage.setItem('apiKey', apiKey);
   }, [apiKey]);
+
+  useEffect(() => {
+    localStorage.setItem('activeChatId', activeChatId);
+  }, [activeChatId]);
 
   // Set up the socket connection
   useEffect(() => {
@@ -120,8 +124,11 @@ const App = () => {
 
         if (chatIndex !== -1) {
           setActiveChatId(chats[chatIndex].id);
+        } else {
+          if (chats.length > 0 && !activeChatId) {
+            setActiveChatId(chats[chats.length - 1].id);
+          }
         }
-
       });
 
       socket.on('chat created', (newChat) => {
@@ -162,7 +169,7 @@ const App = () => {
         socket.off('bot image');
       }
     };
-  }, [socket, setActiveChatId, chats]);
+  }, [socket, setActiveChatId, chats, activeChatId]);
 
 
   return (
