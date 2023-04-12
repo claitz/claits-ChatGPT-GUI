@@ -21,7 +21,6 @@ const Message = ({ message, toast }) => {
         });
     }
 
-
     const handleDoubleClick = useCallback(
         (e) => {
             const codeBlock = e.target.closest('pre');
@@ -52,8 +51,7 @@ const Message = ({ message, toast }) => {
                         alt="Generated content"
                         className="generated-image"
                         onClick={() =>{
-                            setIsLightboxOpen(true);
-                            console.log("clicked")}
+                            setIsLightboxOpen(true)}
                         }
                     />
                     {isLightboxOpen && (
