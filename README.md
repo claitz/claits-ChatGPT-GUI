@@ -11,8 +11,11 @@ This was created to provide an alternative to the amazing [PatrikZeros ChatGPT A
 - Chat history stored to MongoDB
 - Image generation with persistent local storage to MongoDB
 - Double click to copy code blocks
-- `.env` configuration
+- Toast notifications
 - Websocket server & streamed bot responses
+
+## Screenshots
+![Application Screenshot](https://i.imgur.com/xa1EVGI.png)
 
 Text request with response streaming:
 
