@@ -13,6 +13,8 @@ import Sidebar from "./components/Sidebar";
 const backendUrl = process.env.REACT_APP_BACKEND_HOST;
 const imageCommand = process.env.REACT_APP_IMAGE_REQUEST;
 
+const timeoutInterval = process.env.REACT_APP_TIMEOUT_INTERVAL;
+
 const App = () => {
 
   const [chats, setChats] = useState(null);
@@ -21,6 +23,8 @@ const App = () => {
   const [apiKey, setApiKey] = useState(localStorage.getItem('apiKey') || '');
   const [showSettings, setShowSettings] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [isConnected, setIsConnected] = useState(false);
+
 
   const [activeChatId, setActiveChatId] = useState(localStorage.getItem('activeChatId') || null);
   const activeChat = useMemo(() => chats?.find((chat) => chat.id === activeChatId), [chats, activeChatId]);
@@ -45,17 +49,37 @@ const App = () => {
     // Notify the user when connected to the server
     newSocket.on('connect', () => {
       toast.success('Connected to the backend');
+      setIsConnected(true);
     });
 
     // Notify the user when disconnected from the server
     newSocket.on('disconnect', () => {
       toast.error('Disconnected from the backend');
+        setIsConnected(false);
     });
 
     return () => {
       newSocket.close();
     };
   }, []);
+
+  // Notify the user if the connection to the backend is lost
+  useEffect(() => {
+    let interval;
+
+    if (!isConnected) {
+      interval = setInterval(() => {
+        toast.warning("No connection to the backend");
+      }, timeoutInterval);
+    } else {
+      clearInterval(interval);
+    }
+
+    return () => {
+      clearInterval(interval);
+    };
+  }, [socket, isConnected]);
+
 
   // Save the model to local storage TODO: move this to server side persistence
   const handleModelChange = (newModel) => {
