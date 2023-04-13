@@ -70,6 +70,8 @@ const App = () => {
     if (!isConnected) {
       interval = setInterval(() => {
         toast.warning("No connection to the backend");
+        console.log("backendUrl: " +backendUrl);
+        console.log("timeoutInterval: " +timeoutInterval);
       }, timeoutInterval);
     } else {
       clearInterval(interval);
