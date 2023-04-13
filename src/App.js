@@ -9,8 +9,8 @@ import Modal from './components/Modal';
 import Settings from "./components/Settings";
 import Sidebar from "./components/Sidebar";
 
-const SOCKET_SERVER_ADDRESS = process.env.REACT_APP_BACKEND_HOST || 'http://localhost:3001';
 
+const backendUrl = process.env.REACT_APP_BACKEND_HOST || `http://localhost:3001`;
 const imageCommand = process.env.REACT_APP_IMAGE_REQUEST || '/image';
 
 const App = () => {
@@ -39,7 +39,7 @@ const App = () => {
 
   // Set up the socket connection
   useEffect(() => {
-    const newSocket = io(SOCKET_SERVER_ADDRESS);
+    const newSocket = io(backendUrl);
     setSocket(newSocket);
 
     // Notify the user when connected to the server

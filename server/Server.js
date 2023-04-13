@@ -10,8 +10,8 @@ dotenv.config();
 
 const maxPromptLength = 200;
 
-const PORT = process.env.REACT_APP_WS_PORT || 3001;
-const backendUrl = process.env.REACT_APP_BACKEND_HOST || `http://localhost:${PORT}`;
+const backendUrl = process.env.REACT_APP_BACKEND_HOST || `http://localhost:3001`;
+const frontendUrl = process.env.REACT_APP_FRONTEND_HOST || `http://localhost:3000`;
 
 // MongoDB configuration
 const mongoUsername = process.env.MONGO_USERNAME;
@@ -66,7 +66,7 @@ const server = app.listen(PORT, () => console.log(`Server listening on port ${PO
 // Create socket server
 const io = new socketIO(server, {
     cors: {
-        origin: '*',
+        origin: frontendUrl,
         methods: ['GET', 'POST'],
     },
 });

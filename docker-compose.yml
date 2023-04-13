@@ -8,10 +8,9 @@ services:
       - "3001:3001"
       - "5000:5000"
     environment:
-      - WATCHPACK_POLLING=true
-      - REACT_APP_WS_PORT=3001
-      - REACT_APP_BACKEND_HOST=http://localhost:3001
-      - REACT_APP_IMAGE_REQUEST=/imagine
+      - REACT_APP_FRONTEND_HOST=http://claits-chatgpt-gui:5000
+      - REACT_APP_BACKEND_HOST=http://claits-chatgpt-gui:3001
+      - REACT_APP_IMAGE_REQUEST=/i
       - MONGO_USERNAME=chatgpt
       - MONGO_PASSWORD=chatgpt
       - MONGO_HOST=mongo

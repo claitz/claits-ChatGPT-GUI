@@ -15,7 +15,7 @@ This was created to provide an alternative to the amazing [PatrikZeros ChatGPT A
 - Websocket server & streamed bot responses
 
 ## Screenshots
-![Application Screenshot](https://i.imgur.com/xa1EVGI.png)
+![Application Screenshot](https://i.imgur.com/yOwp8Wr.png)
 
 Text request with response streaming:
 
@@ -42,6 +42,44 @@ A prebuilt Docker image is available on [Docker Hub](https://hub.docker.com/r/cl
 - Open `localhost:5000` in your browser
 
 This will start the stack (app + MongoDB) and expose the app on port 5000. You can change the configuration in the `docker-compose.yml` file.
+
+#### Example docker-compose.yml
+
+```yaml
+version: '3.3'
+
+services:
+  claits-chatgpt-gui:
+    image: claitz/claits-chatgpt-gui:latest
+    container_name: claits-chatgpt-gui
+    ports:
+      - "3001:3001"
+      - "5000:5000"
+    environment:
+      - REACT_APP_FRONTEND_HOST=http://claits-chatgpt-gui:5000
+      - REACT_APP_BACKEND_HOST=http://claits-chatgpt-gui:3001
+      - REACT_APP_IMAGE_REQUEST=/i
+      - MONGO_USERNAME=chatgpt
+      - MONGO_PASSWORD=chatgpt
+      - MONGO_HOST=mongo
+      - MONGO_PORT=27017
+      - MONGO_DB_NAME=chagpt-db
+
+  mongo:
+    image: mongo:5.0
+    container_name: claits-chatgpt-gui-mongo
+    volumes:
+      - chatgpt-gui-persistence:/data/db
+      - chatgpt-gui-persistence:/data/configdb
+    ports:
+      - "27017:27017"
+    environment:
+      - MONGO_INITDB_ROOT_USERNAME=chatgpt
+      - MONGO_INITDB_ROOT_PASSWORD=chatgpt
+
+volumes:
+  chatgpt-gui-persistence:
+```
 
 ### Manually
 
