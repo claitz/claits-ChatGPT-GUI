@@ -8,6 +8,9 @@ import MessageList from './components/MessageList';
 import Modal from './components/Modal';
 import Settings from "./components/Settings";
 import Sidebar from "./components/Sidebar";
+import dotenv from 'dotenv';
+
+dotenv.config();
 
 
 const backendUrl = process.env.REACT_APP_BACKEND_HOST;
