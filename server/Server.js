@@ -10,15 +10,15 @@ dotenv.config();
 
 const maxPromptLength = 200;
 
-const backendUrl = process.env.REACT_APP_BACKEND_HOST || `http://localhost:3001`;
-const frontendUrl = process.env.REACT_APP_FRONTEND_HOST || `http://localhost:3000`;
+const backendUrl = process.env.REACT_APP_BACKEND_HOST;
+const frontendUrl = process.env.REACT_APP_FRONTEND_HOST;
 
 // MongoDB configuration
 const mongoUsername = process.env.MONGO_USERNAME;
 const mongoPassword = process.env.MONGO_PASSWORD;
 const mongoHost = process.env.MONGO_HOST;
 const mongoPort = process.env.MONGO_PORT;
-const mongoDbName = process.env.MONGO_DB_NAME || 'chagpt-db';
+const mongoDbName = process.env.MONGO_DB_NAME;
 const mongoDbUrl = `mongodb://${mongoUsername}:${mongoPassword}@${mongoHost}:${mongoPort}`;
 
 const mongoClient = new MongoClient(mongoDbUrl, { useNewUrlParser: true, useUnifiedTopology: true });

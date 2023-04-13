@@ -10,8 +10,8 @@ import Settings from "./components/Settings";
 import Sidebar from "./components/Sidebar";
 
 
-const backendUrl = process.env.REACT_APP_BACKEND_HOST || `http://localhost:3001`;
-const imageCommand = process.env.REACT_APP_IMAGE_REQUEST || '/image';
+const backendUrl = process.env.REACT_APP_BACKEND_HOST;
+const imageCommand = process.env.REACT_APP_IMAGE_REQUEST;
 
 const App = () => {
 
@@ -200,7 +200,7 @@ const App = () => {
           {activeChat ? (
               <>
                 <div className="chatbox-header">{activeChat.title}</div>
-                <MessageList activeChat={activeChat} toast={toast} socket={socket}/>
+                <MessageList activeChat={activeChat} toast={toast} backendUrl= {backendUrl} socket={socket}/>
                 <ChatInput onSendMessage={onSendMessage} isLoading={isLoading} />
                 {showSettings && (
                     <Modal isOpen={showSettings} onClose={toggleSettingsModal}>

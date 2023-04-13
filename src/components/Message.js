@@ -6,11 +6,9 @@ import Captions from "yet-another-react-lightbox/plugins/captions";
 import "yet-another-react-lightbox/styles.css";
 import "yet-another-react-lightbox/plugins/captions.css";
 
-const Message = ({ activeChat, message, toast, socket }) => {
+const Message = ({ activeChat, message, backendUrl, toast, socket }) => {
     const { content, role, timestamp, prompt, imageId } = message;
     const isUser = role === 'user';
-
-    const backendUrl = process.env.REACT_APP_BACKEND_HOST || 'http://localhost:3001';
 
     const [isLightboxOpen, setIsLightboxOpen] = useState(false);
 
