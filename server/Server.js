@@ -10,6 +10,7 @@ dotenv.config();
 
 const maxPromptLength = 200;
 
+const listenPort = process.env.REACT_APP_BACKEND_LISTEN_PORT;
 const backendUrl = process.env.REACT_APP_BACKEND_HOST;
 const frontendUrl = process.env.REACT_APP_FRONTEND_HOST;
 
@@ -61,7 +62,7 @@ app.get('/images/:id', async (req, res) => {
 });
 
 // Create express server
-const server = app.listen(PORT, () => console.log(`Server listening on port ${PORT}`));
+const server = app.listen(listenPort, () => console.log(`Server listening on port ${listenPort}`));
 
 // Create socket server
 const io = new socketIO(server, {

@@ -9,6 +9,7 @@ services:
       - "5000:5000"
     environment:
       - REACT_APP_FRONTEND_HOST=http://claits-chatgpt-gui:5000
+      - REACT_APP_BACKEND_LISTEN_PORT=3001
       - REACT_APP_BACKEND_HOST=http://claits-chatgpt-gui:3001
       - REACT_APP_IMAGE_REQUEST=/i
       - MONGO_USERNAME=chatgpt
