@@ -8,37 +8,51 @@ import MessageList from './components/MessageList';
 import Modal from './components/Modal';
 import Settings from "./components/Settings";
 import Sidebar from "./components/Sidebar";
-import dotenv from 'dotenv';
-
-dotenv.config();
-
-
-const backendUrl = process.env.REACT_APP_BACKEND_HOST;
-const imageCommand = process.env.REACT_APP_IMAGE_REQUEST;
-
-const timeoutInterval = process.env.REACT_APP_TIMEOUT_INTERVAL;
 
 const App = () => {
 
-  const [chats, setChats] = useState(null);
+  // Socket
   const [socket, setSocket] = useState(null);
-  const [model, setModel] = useState(localStorage.getItem('model') || 'gpt-3.5-turbo');
-  const [apiKey, setApiKey] = useState(localStorage.getItem('apiKey') || '');
+
+  // Chats
+  const [chats, setChats] = useState(null);
+  const [activeChatId, setActiveChatId] = useState(localStorage.getItem('activeChatId') || null);
+  const activeChat = useMemo(() => chats?.find((chat) => chat.id === activeChatId), [chats, activeChatId]);
+
+  // UI
   const [showSettings, setShowSettings] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [isConnected, setIsConnected] = useState(false);
 
+  // Settings
+  const [settings, setSettings] = useState({
+    model: localStorage.getItem('model') || 'gpt-3.5-turbo',
+    apiKey: localStorage.getItem('apiKey') || '',
+    backendUrl: localStorage.getItem('backendUrl') || 'http://localhost:3001',
+    imageCommand: localStorage.getItem('imageCommand') || '/image',
+    timeoutInterval: localStorage.getItem('timeoutInterval') || 5000,
+  });
 
-  const [activeChatId, setActiveChatId] = useState(localStorage.getItem('activeChatId') || null);
-  const activeChat = useMemo(() => chats?.find((chat) => chat.id === activeChatId), [chats, activeChatId]);
+  // Local storage
+  useEffect(() => {
+    localStorage.setItem('model', settings.model);
+  }, [settings.model]);
 
   useEffect(() => {
-    localStorage.setItem('model', model);
-  }, [model]);
+    localStorage.setItem('apiKey', settings.apiKey);
+  }, [settings.apiKey]);
 
   useEffect(() => {
-    localStorage.setItem('apiKey', apiKey);
-  }, [apiKey]);
+    localStorage.setItem('backendUrl', settings.backendUrl);
+  }, [settings.backendUrl]);
+
+  useEffect(() => {
+    localStorage.setItem('imageCommand', settings.imageCommand);
+    }, [settings.imageCommand]);
+
+  useEffect(() => {
+    localStorage.setItem('timeoutInterval', settings.timeoutInterval);
+  }, [settings.timeoutInterval]);
 
   useEffect(() => {
     localStorage.setItem('activeChatId', activeChatId);
@@ -46,25 +60,25 @@ const App = () => {
 
   // Set up the socket connection
   useEffect(() => {
-    const newSocket = io(backendUrl);
+    const newSocket = io(settings.backendUrl);
     setSocket(newSocket);
 
     // Notify the user when connected to the server
     newSocket.on('connect', () => {
-      toast.success('Connected to the backend');
+      sendToast('success', 'Connected to the backend')
       setIsConnected(true);
     });
 
     // Notify the user when disconnected from the server
     newSocket.on('disconnect', () => {
-      toast.error('Disconnected from the backend');
+        sendToast('error', 'Disconnected from the backend')
         setIsConnected(false);
     });
 
     return () => {
       newSocket.close();
     };
-  }, []);
+  }, [settings.backendUrl]);
 
   // Notify the user if the connection to the backend is lost
   useEffect(() => {
@@ -72,10 +86,8 @@ const App = () => {
 
     if (!isConnected) {
       interval = setInterval(() => {
-        toast.warning("No connection to the backend");
-        console.log("backendUrl: " +backendUrl);
-        console.log("timeoutInterval: " +timeoutInterval);
-      }, timeoutInterval);
+        sendToast('warning', 'No connection to the backend')
+      }, settings.timeoutInterval);
     } else {
       clearInterval(interval);
     }
@@ -83,24 +95,23 @@ const App = () => {
     return () => {
       clearInterval(interval);
     };
-  }, [socket, isConnected]);
+  }, [socket, isConnected, settings.timeoutInterval]);
 
-
-  // Save the model to local storage TODO: move this to server side persistence
-  const handleModelChange = (newModel) => {
-    setModel(newModel);
-    toast.success('Model settings saved');
-  };
-
-  // Save the API key to local storage TODO: move this to server side persistence
-  const handleApiKeyChange = (newApiKey) => {
-    setApiKey(newApiKey);
-    toast.success('API key settings saved');
-  };
+  const sendToast = (type, message) => {
+    if (type === 'success') {
+      toast.success(message);
+    } else if (type === 'error') {
+      toast.error(message);
+    } else if (type === 'info') {
+      toast.info(message);
+    } else if (type === 'warning') {
+      toast.warning(message);
+    }
+  }
 
   // Is this a message requesting an image?
   const isImageRequest = (message) => {
-    return message.trim().startsWith(imageCommand);
+    return message.trim().startsWith(settings.imageCommand);
   };
 
   // Send a message to the bot
@@ -109,11 +120,11 @@ const App = () => {
 
     if (isImageRequest(message)) {
       if (socket) {
-        socket.emit('image request', {chatId: activeChatId, message, apiKey, imageCommand});
+        socket.emit('image request', {chatId: activeChatId, message, apiKey: settings.apiKey, imageCommand: settings.imageCommand});
       }
     } else {
       if (socket) {
-        socket.emit('chat message', {chatId: activeChatId, messageInput: message, model, apiKey });
+        socket.emit('chat message', {chatId: activeChatId, messageInput: message, apiKey: settings.apiKey, imageCommand: settings.imageCommand});
       }
     }
   };
@@ -161,7 +172,7 @@ const App = () => {
       });
 
       socket.on('chat created', (newChat) => {
-        toast.success('Chat created');
+        sendToast('success', 'Chat created');
       });
 
       socket.on('bot image', (data) => {
@@ -170,13 +181,13 @@ const App = () => {
 
       // Used to display error messages
       socket.on('error', (data) => {
-        toast.error(data.error);
+        sendToast('error', data.error)
         setIsLoading(false);
       });
 
       // Used to display info messages
       socket.on('info', (data) => {
-        toast.info(data.info);
+        sendToast('info', data.info)
       });
 
       // Used to re-enable the chat input after the bot has finished
@@ -229,16 +240,17 @@ const App = () => {
           {activeChat ? (
               <>
                 <div className="chatbox-header">{activeChat.title}</div>
-                <MessageList activeChat={activeChat} toast={toast} backendUrl= {backendUrl} socket={socket}/>
+                <MessageList activeChat={activeChat} toast={toast} backendUrl= {settings.backendUrl} socket={socket}/>
                 <ChatInput onSendMessage={onSendMessage} isLoading={isLoading} />
-                {showSettings && (
-                    <Modal isOpen={showSettings} onClose={toggleSettingsModal}>
-                      <Settings apiKey={apiKey} model={model} onApiKeyChange={handleApiKeyChange} onModelChange={handleModelChange} />
-                    </Modal>
-                )}
+
               </>
           ) : (
               <div className="loading-container">Create a new chat to begin.</div>
+          )}
+          {showSettings && (
+              <Modal isOpen={showSettings} onClose={toggleSettingsModal}>
+                <Settings settings={settings} onSettingChange={setSettings}/>
+              </Modal>
           )}
         </div>
       </div>

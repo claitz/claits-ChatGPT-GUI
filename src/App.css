@@ -9,6 +9,10 @@
   font-family: Roboto, sans-serif;
 }
 
+h4 {
+  margin-bottom: 0;
+}
+
 .chatbox {
   display: flex;
   flex-direction: column;
@@ -61,10 +65,6 @@
   overflow-y: auto;
 }
 
-.settings {
-  margin-bottom: 1rem;
-}
-
 .modal {
   position: fixed;
   top: 0;
@@ -91,9 +91,9 @@
   background-color: #222;
   z-index: 2;
   padding: 1rem;
-  border-radius: 1rem;
+  border-radius: .25rem;
   width: 50%;
-  max-height: 90vh;
+  min-height: 30vh;
   overflow: auto;
   color: #fff;
 }
@@ -112,7 +112,7 @@
 
 .message {
   background-color: #40414f;
-  border-radius: 1rem;
+  border-radius: .25rem;
   padding: 1rem;
   /*margin-bottom: 1rem;*/
   max-width: 50%;
@@ -228,7 +228,7 @@
 .chat-input textarea {
   flex: 1;
   border: 1px solid #ddd;
-  border-radius: 1rem;
+  border-radius: .25rem;
   padding: 1rem;
   background-color: #202123;
   color: #fff;
@@ -253,7 +253,7 @@
 
 .chat-input button {
   border: none;
-  border-radius: 1rem;
+  border-radius: .25rem;
   background-color: #40414f;
   cursor: pointer;
   padding: 1rem;
@@ -291,6 +291,88 @@
   display: flex;
   flex-direction: column;
   align-items: center;
+  margin-bottom: 1rem;
+}
+
+.select-wrapper {
+  position: relative;
+  display: inline-block;
+  margin-top: 0.5rem;
+  margin-bottom: 1rem;
+}
+
+.select-wrapper::after {
+  content: "▽";
+  position: absolute;
+  top: 50%;
+  right: 1rem;
+  transform: translateY(-50%);
+  color: #fff;
+  pointer-events: none;
+}
+
+.settings-tabs {
+  display: flex;
+  margin-bottom: 1rem;
+}
+
+.tab-btn {
+  flex: 1;
+  padding: 0.5rem 1rem;
+  background-color: #444;
+  color: #fff;
+  border: none;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+  margin: 5px;
+  border-radius: .25rem;
+}
+
+.tab-btn:hover {
+  background-color: #555;
+}
+
+.tab-btn.active {
+  background-color: #555;
+  font-weight: bold;
+}
+
+.settings select {
+  background-color: #444;
+  color: #fff;
+  border: none;
+  border-radius: .25rem;
+  padding: 0.5rem 1.5rem 0.5rem 1rem;
+  font-size: 1rem;
+  text-align: center;
+  appearance: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  width: 100%; /* Adjust this value if you want to set a specific width */
+}
+
+.settings input[type="text"] {
+  background-color: #444;
+  color: #fff;
+  border: none;
+  border-radius: .25rem;
+  padding: 0.5rem 1rem;
+  margin-top: 0.5rem;
+  margin-bottom: 1rem;
+  font-size: 1rem;
+  text-align: center;
+}
+
+.settings input[type="number"] {
+  background-color: #444;
+  color: #fff;
+  border: none;
+  border-radius: .25rem;
+  padding: 0.5rem 1rem;
+  margin-top: 0.5rem;
+  margin-bottom: 1rem;
+  font-size: 1rem;
+  text-align: center;
 }
 
 .modal-header {
@@ -347,7 +429,7 @@
   margin-bottom: 0.5rem;
   background-color: #333333;
   border: 1px solid #ddd;
-  border-radius: 0.5rem;
+  border-radius: 0.25rem;
   cursor: pointer;
 }
 
@@ -365,7 +447,7 @@
     width: 100%;
     background-color: #40414f;
     border: none;
-    border-radius: 0.5rem;
+    border-radius: 0.25rem;
     cursor: pointer;
     padding: 1rem;
     text-align: center;
@@ -380,28 +462,6 @@
 
 .new-chat-button {
   margin-bottom: 1rem;
-}
-
-.settings select {
-  background-color: #444;
-  color: #fff;
-  border: none;
-  border-radius: 1rem;
-  padding: 0.5rem 1rem;
-  margin-top: 0.5rem;
-  margin-bottom: 1rem;
-  font-size: 1rem;
-}
-
-.settings input[type="text"] {
-  background-color: #444;
-  color: #fff;
-  border: none;
-  border-radius: 1rem;
-  padding: 0.5rem 1rem;
-  margin-top: 0.5rem;
-  margin-bottom: 1rem;
-  font-size: 1rem;
 }
 
 .chat-title {
@@ -435,7 +495,7 @@
   border: none;
   color: #fff;
   padding: 0.5rem 1rem;
-  border-radius: 0.5rem;
+  border-radius: 0.25rem;
   width: 100%;
   box-sizing: border-box;
 }
@@ -487,7 +547,7 @@
 .copy-code-btn {
   background-color: #40414f;
   border: none;
-  border-radius: 1rem;
+  border-radius: .25rem;
   color: #fff;
   cursor: pointer;
   font-size: 0.8rem;

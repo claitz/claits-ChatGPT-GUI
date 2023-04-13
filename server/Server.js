@@ -12,7 +12,6 @@ const maxPromptLength = 200;
 
 const listenPort = process.env.REACT_APP_BACKEND_LISTEN_PORT;
 const backendUrl = process.env.REACT_APP_BACKEND_HOST;
-const frontendUrl = process.env.REACT_APP_FRONTEND_HOST;
 
 // MongoDB configuration
 const mongoUsername = process.env.MONGO_USERNAME;
@@ -67,7 +66,7 @@ const server = app.listen(listenPort, () => console.log(`Server listening on por
 // Create socket server
 const io = new socketIO(server, {
     cors: {
-        origin: frontendUrl,
+        origin: '*',
         methods: ['GET', 'POST'],
     },
 });
