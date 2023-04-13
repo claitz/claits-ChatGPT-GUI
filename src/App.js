@@ -28,7 +28,7 @@ const App = () => {
   const [settings, setSettings] = useState({
     model: localStorage.getItem('model') || 'gpt-3.5-turbo',
     apiKey: localStorage.getItem('apiKey') || '',
-    backendUrl: localStorage.getItem('backendUrl') || 'http://localhost:3001',
+    backendUrl: localStorage.getItem('backendUrl') || ':3001',
     imageCommand: localStorage.getItem('imageCommand') || '/image',
     timeoutInterval: localStorage.getItem('timeoutInterval') || 5000,
   });
