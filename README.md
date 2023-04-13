@@ -13,6 +13,7 @@ This was created to provide an alternative to the amazing [PatrikZeros ChatGPT A
 - Double click to copy code blocks
 - Toast notifications
 - Websocket server & streamed bot responses
+- Settings panel
 
 ## Screenshots
 ![Application Screenshot](https://i.imgur.com/yOwp8Wr.png)
@@ -56,11 +57,8 @@ services:
       - "3001:3001"
       - "5000:5000"
     environment:
-      - REACT_APP_FRONTEND_HOST=http://claits-chatgpt-gui:5000
       - REACT_APP_BACKEND_LISTEN_PORT=3001
       - REACT_APP_BACKEND_HOST=http://claits-chatgpt-gui:3001
-      - REACT_APP_IMAGE_REQUEST=/i
-      - REACT_APP_TIMEOUT_INTERVAL=10000
       - MONGO_USERNAME=chatgpt
       - MONGO_PASSWORD=chatgpt
       - MONGO_HOST=mongo
